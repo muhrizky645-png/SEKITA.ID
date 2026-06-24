@@ -9,15 +9,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  webview_flutter: ^4.7.0
+  http: ^1.2.0
   url_launcher: ^6.2.5
 
 dev_dependencies:
   flutter_lints: ^4.0.0
   flutter_launcher_icons: ^0.13.1
 
-# Konfigurasi ikon aplikasi Sekita.
-# Jalankan: dart run flutter_launcher_icons
+# Ikon aplikasi Sekita. Jalankan: dart run flutter_launcher_icons
 flutter_launcher_icons:
   android: "ic_launcher"
   ios: false
