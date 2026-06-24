@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'api.dart';
 import 'core.dart';
 import 'models.dart';
@@ -24,11 +25,32 @@ class _MitraDetailScreenState extends State<MitraDetailScreen> {
     _cover = Api.fetchCover(widget.mitra.id);
   }
 
+  void _shareProfile(Mitra m) {
+    final link = 'https://' 'sekita.id/profil-mitra.php?id=${m.id}';
+    Clipboard.setData(ClipboardData(text: link));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Link profil mitra disalin — tempel untuk membagikan'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final m = widget.mitra;
     return Scaffold(
-      appBar: AppBar(title: Text(m.displayName, maxLines: 1, overflow: TextOverflow.ellipsis)),
+      appBar: AppBar(
+        title: Text(m.displayName, maxLines: 1, overflow: TextOverflow.ellipsis),
+        actions: [
+          IconButton(
+            tooltip: 'Bagikan',
+            icon: const Icon(Icons.share_outlined),
+            onPressed: () => _shareProfile(m),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 100),
         children: [
