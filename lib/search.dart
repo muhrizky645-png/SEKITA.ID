@@ -7,7 +7,8 @@ import 'detail.dart';
 
 class SearchScreen extends StatefulWidget {
   final String? initialCategory;
-  const SearchScreen({super.key, this.initialCategory});
+  final bool autofocus;
+  const SearchScreen({super.key, this.initialCategory, this.autofocus = false});
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
@@ -49,12 +50,12 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final autofocus = widget.initialCategory == null;
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: widget.initialCategory != null,
         title: TextField(
           controller: _ctrl,
-          autofocus: autofocus,
+          autofocus: widget.autofocus,
           onChanged: (v) => setState(() => _query = v),
           decoration: const InputDecoration(
             hintText: 'Cari jasa atau mitra...',

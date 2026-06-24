@@ -33,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
       Navigator.push(context, MaterialPageRoute(builder: (_) => SearchScreen(initialCategory: c)));
 
   void _openSearch() =>
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen()));
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen(autofocus: true)));
 
   @override
   Widget build(BuildContext context) {

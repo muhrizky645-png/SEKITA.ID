@@ -80,3 +80,54 @@ class Ulasan {
     );
   }
 }
+
+class Kebutuhan {
+  final String id;
+  final String title;
+  final String loc;
+  final String cat;
+  final String ic;
+  final String budget;
+  final String deskripsi;
+  final String status;
+  final int ts;
+  final String pembeliNama;
+  final int contactedCount;
+
+  Kebutuhan({
+    required this.id,
+    required this.title,
+    required this.loc,
+    required this.cat,
+    required this.ic,
+    required this.budget,
+    required this.deskripsi,
+    required this.status,
+    required this.ts,
+    required this.pembeliNama,
+    required this.contactedCount,
+  });
+
+  bool get isDone => status == 'done';
+
+  factory Kebutuhan.fromJson(Map<String, dynamic> j) {
+    int toI(dynamic v) => v == null ? 0 : (v is num ? v.toInt() : int.tryParse('$v') ?? 0);
+    final p = j['pembeli'];
+    final nama = (p is Map && p['nama'] != null) ? '${p['nama']}' : '';
+    final cb = j['contactedBy'];
+    final count = cb is List ? cb.length : 0;
+    return Kebutuhan(
+      id: '${j['id'] ?? ''}',
+      title: '${j['title'] ?? ''}',
+      loc: '${j['loc'] ?? ''}',
+      cat: '${j['cat'] ?? ''}',
+      ic: '${j['ic'] ?? '📝'}',
+      budget: '${j['budget'] ?? ''}',
+      deskripsi: '${j['deskripsi'] ?? ''}',
+      status: '${j['status'] ?? 'open'}',
+      ts: toI(j['ts']),
+      pembeliNama: nama,
+      contactedCount: count,
+    );
+  }
+}

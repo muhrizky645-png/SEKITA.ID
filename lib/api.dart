@@ -1,19 +1,31 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'models.dart';
 
 class Api {
-  static const String base = 'https://sekita.id/api';
+  static const String base = 'https://' 'sekita.id/api';
 
   static const List<String> kategoriDasar = [
     'Terapis', 'Tukang', 'Transportasi', 'Servis AC', 'Kebersihan',
     'Les Privat', 'Fotografer', 'MUA', 'Lainnya',
   ];
 
-  static String? _deviceId;
-  static String get deviceId {
-    _deviceId ??= 'app_${DateTime.now().microsecondsSinceEpoch}';
-    return _deviceId!;
+  static String _deviceId = '';
+  static String get deviceId => _deviceId;
+
+  static Future<void> initDeviceId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      var id = prefs.getString('device_id');
+      if (id == null || id.isEmpty) {
+        id = 'app_${DateTime.now().microsecondsSinceEpoch}';
+        await prefs.setString('device_id', id);
+      }
+      _deviceId = id;
+    } catch (_) {
+      _deviceId = 'app_${DateTime.now().microsecondsSinceEpoch}';
+    }
   }
 
   static Future<List<Mitra>> fetchMitra() async {
@@ -56,6 +68,26 @@ class Api {
             .map((e) => Ulasan.fromJson(e as Map<String, dynamic>))
             .where((u) => u.mitraId == mitraId)
             .toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  static Future<List<Kebutuhan>> fetchKebutuhan() async {
+    final r = await http.get(Uri.parse('$base/kebutuhan-list.php')).timeout(const Duration(seconds: 20));
+    final j = jsonDecode(r.body);
+    if (j is Map && j['kebutuhan'] is List) {
+      return (j['kebutuhan'] as List).map((e) => Kebutuhan.fromJson(e as Map<String, dynamic>)).toList();
+    }
+    throw Exception('Gagal memuat kebutuhan');
+  }
+
+  static Future<List<Kebutuhan>> fetchKebutuhanMine() async {
+    try {
+      final r = await http.get(Uri.parse('$base/kebutuhan-mine.php?device_id=$deviceId'));
+      final j = jsonDecode(r.body);
+      if (j is Map && j['kebutuhan'] is List) {
+        return (j['kebutuhan'] as List).map((e) => Kebutuhan.fromJson(e as Map<String, dynamic>)).toList();
       }
     } catch (_) {}
     return [];
