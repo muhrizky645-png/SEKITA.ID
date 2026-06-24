@@ -22,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _autoTimer;
   int _bannerIdx = 0;
   static const int _bannerCount = 5;
+  static const int _maxMitraBeranda = 15;
 
   @override
   void initState() {
@@ -30,7 +31,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (Api.currentUser != null) {
       _myFuture = Api.fetchKebutuhanMine();
     }
-    // Mulai dari kelipatan besar supaya bisa geser kiri tanpa henti.
     _pageCtrl = PageController(initialPage: _bannerCount * 1000);
     _autoTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (_pageCtrl.hasClients) {
@@ -66,6 +66,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openSearch() =>
       Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen(autofocus: true)));
 
+  void _openAllMitra() =>
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen()));
+
   void _goAkun() =>
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AkunScreen()));
 
@@ -92,6 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ...all.where((m) => m.promoted > 0),
                 ...all.where((m) => m.promoted == 0),
               ];
+              final shown = sorted.take(_maxMitraBeranda).toList();
               return ListView(
                 padding: EdgeInsets.zero,
                 children: [
@@ -104,18 +108,37 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (user == null) _guestBanner(),
                   if (user != null && _myFuture != null) _myKebutuhanSection(),
                   _sectionTitle('Mitra'),
-                  if (sorted.isEmpty)
+                  if (shown.isEmpty)
                     const Padding(
                       padding: EdgeInsets.all(32),
                       child: Center(child: Text('Belum ada mitra.')),
                     ),
-                  ...sorted.map((m) => MitraCard(m: m, onTap: () => _openDetail(m))),
+                  ...shown.map((m) => MitraCard(m: m, onTap: () => _openDetail(m))),
+                  if (sorted.length > _maxMitraBeranda) _lihatMitraLain(),
                   const SizedBox(height: 24),
                 ],
               );
             },
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _lihatMitraLain() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+      child: OutlinedButton(
+        onPressed: _openAllMitra,
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(48),
+          foregroundColor: kBrand,
+          side: const BorderSide(color: kBrand),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        child: const Text('Lihat mitra lain',
+            style: TextStyle(fontWeight: FontWeight.w700)),
       ),
     );
   }

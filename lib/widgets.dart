@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'core.dart';
 import 'models.dart';
@@ -117,18 +118,45 @@ class MitraAvatar extends StatelessWidget {
   final Mitra m;
   const MitraAvatar({super.key, required this.m});
 
+  Widget _catIcon() => Container(
+        color: const Color(0xFFEFF4FF),
+        padding: const EdgeInsets.all(10),
+        child: SekitaImage(catIconPath(m.kategori), fit: BoxFit.contain),
+      );
+
   @override
   Widget build(BuildContext context) {
     final src = m.avatar.isNotEmpty
         ? m.avatar
         : (m.portfolioThumb.isNotEmpty ? m.portfolioThumb.first : '');
-    if (src.isNotEmpty) return SekitaImage(src, fit: BoxFit.cover);
 
-    // Belum upload foto: tampilkan icon kategori (sama seperti grid)
-    return Container(
-      color: const Color(0xFFEFF4FF),
-      padding: const EdgeInsets.all(10),
-      child: SekitaImage(catIconPath(m.kategori), fit: BoxFit.contain),
+    // Tidak ada foto -> langsung icon kategori
+    if (src.isEmpty) return _catIcon();
+
+    // Base64 inline
+    if (src.startsWith('data:image')) {
+      try {
+        final b64 = src.substring(src.indexOf(',') + 1);
+        return Image.memory(base64Decode(b64),
+            fit: BoxFit.cover, gaplessPlayback: true,
+            errorBuilder: (_, __, ___) => _catIcon());
+      } catch (_) {
+        return _catIcon();
+      }
+    }
+
+    // URL biasa/relatif -> normalize lalu load, fallback ke icon kategori
+    var url = src;
+    if (!url.startsWith('http')) {
+      final host = 'https://' + 'sekita.id/';
+      url = host + url.replaceFirst(RegExp(r'^/'), '');
+    }
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => _catIcon(),
+      loadingBuilder: (c, child, progress) =>
+          progress == null ? child : Container(color: const Color(0xFFE5E7EB)),
     );
   }
 }
