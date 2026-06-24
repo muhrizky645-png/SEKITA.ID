@@ -138,6 +138,7 @@ class _MitraDetailScreenState extends State<MitraDetailScreen> {
                               fontWeight: FontWeight.w600)),
                     ),
                     if (m.verified >= 1) _verifBadge(m),
+                    if (m.perdanaNo != null) _perdanaBadge(m),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -234,6 +235,56 @@ class _MitraDetailScreenState extends State<MitraDetailScreen> {
             const SizedBox(width: 4),
             Icon(Icons.info_outline,
                 size: 13, color: t.color.withOpacity(0.7)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Badge Mitra Perdana — 100 pendaftar pertama (bonus peluncuran).
+  Widget _perdanaBadge(Mitra m) {
+    const gold = Color(0xFFB45309);
+    return GestureDetector(
+      onTap: () => showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Row(
+            children: const [
+              Icon(Icons.workspace_premium, color: gold),
+              SizedBox(width: 8),
+              Expanded(child: Text('Mitra Perdana')),
+            ],
+          ),
+          content: Text(
+            m.perdanaNo != null
+                ? 'Salah satu dari 100 mitra pertama yang bergabung di Sekita (mitra ke-${m.perdanaNo}). Terima kasih sudah menjadi pelopor!'
+                : 'Salah satu dari 100 mitra pertama yang bergabung di Sekita.',
+            style: const TextStyle(height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Mengerti'),
+            ),
+          ],
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEF3C7),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.workspace_premium, size: 14, color: gold),
+            SizedBox(width: 5),
+            Text('Mitra Perdana',
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: gold)),
           ],
         ),
       ),

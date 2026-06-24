@@ -12,6 +12,7 @@ class Mitra {
   final double rating;
   final int promoted;
   final String sponsorPlan;
+  final int? perdanaNo;
   final List<String> portfolioThumb;
 
   Mitra({
@@ -28,6 +29,7 @@ class Mitra {
     required this.rating,
     required this.promoted,
     required this.sponsorPlan,
+    required this.perdanaNo,
     required this.portfolioThumb,
   });
 
@@ -52,6 +54,7 @@ class Mitra {
       rating: toD(j['rating']),
       promoted: toI(j['promoted']),
       sponsorPlan: j['sponsorPlan'] == null ? '' : '${j['sponsorPlan']}',
+      perdanaNo: j['perdanaNo'] == null ? null : toI(j['perdanaNo']),
       portfolioThumb: thumbs,
     );
   }
