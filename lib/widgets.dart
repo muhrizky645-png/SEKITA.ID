@@ -52,10 +52,11 @@ class MitraCard extends StatelessWidget {
                               ),
                             ),
                             if (m.verified > 0)
-                              const Padding(
-                                padding: EdgeInsets.only(left: 4),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 4),
                                 child: Icon(Icons.verified,
-                                    size: 16, color: kBrand),
+                                    size: 16,
+                                    color: verifTierFor(m.verified).color),
                               ),
                           ],
                         ),
