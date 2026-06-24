@@ -208,15 +208,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Kategori horizontal scroll dengan icon asli ──────────────────────────
+  // ── Kategori horizontal scroll dengan icon asli (lebih kecil) ─────────────────
   Widget _categories() {
     return SizedBox(
-      height: 94,
+      height: 80,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: Api.kategoriDasar.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 14),
+        separatorBuilder: (_, __) => const SizedBox(width: 16),
         itemBuilder: (_, i) {
           final c = Api.kategoriDasar[i];
           return GestureDetector(
@@ -225,16 +225,16 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(13),
                   child: SizedBox(
-                    width: 58,
-                    height: 58,
+                    width: 44,
+                    height: 44,
                     child: SekitaImage(catIconPath(c), fit: BoxFit.cover),
                   ),
                 ),
                 const SizedBox(height: 6),
                 SizedBox(
-                  width: 60,
+                  width: 58,
                   child: Text(c,
                       textAlign: TextAlign.center,
                       maxLines: 2,
@@ -288,6 +288,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ── Kebutuhanmu Terbaru (mode pembeli) ───────────────────────────────
   Widget _myKebutuhanSection() {
     return FutureBuilder<List<Kebutuhan>>(
       future: _myFuture,
@@ -303,7 +304,6 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
         final list = snap.data ?? [];
-        if (list.isEmpty) return const SizedBox.shrink();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -312,24 +312,61 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Kebutuhanmu',
+                  const Text('Kebutuhanmu Terbaru',
                       style:
                           TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-                  GestureDetector(
-                    onTap: _goKebutuhan,
-                    child: const Text('Lihat semua →',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: kBrand,
-                            fontWeight: FontWeight.w600)),
-                  ),
+                  if (list.isNotEmpty)
+                    GestureDetector(
+                      onTap: _goKebutuhan,
+                      child: const Text('Lihat semua →',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: kBrand,
+                              fontWeight: FontWeight.w600)),
+                    ),
                 ],
               ),
             ),
-            ...list.take(3).map((k) => _miniCard(k)),
+            if (list.isEmpty)
+              _emptyKebutuhanBox()
+            else
+              ...list.take(3).map((k) => _miniCard(k)),
           ],
         );
       },
+    );
+  }
+
+  Widget _emptyKebutuhanBox() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: const BoxDecoration(
+              color: Color(0xFFEFF4FF),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.assignment_outlined, color: kBrand, size: 26),
+          ),
+          const SizedBox(height: 12),
+          const Text('Kamu belum punya kebutuhan terbaru',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+          const SizedBox(height: 4),
+          Text('Posting kebutuhanmu, biar mitra yang datang 🙌',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+        ],
+      ),
     );
   }
 
