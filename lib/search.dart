@@ -18,6 +18,10 @@ class _SearchScreenState extends State<SearchScreen> {
   final _ctrl = TextEditingController();
   String _query = '';
   String? _category;
+  String? _loc;
+  bool _trusted = false;
+  bool _topRated = false;
+  String _sort = 'rekomendasi';
 
   @override
   void initState() {
@@ -32,17 +36,59 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-  List<Mitra> _filter(List<Mitra> all) {
+  // Samakan dgn web: semua kategori diawali "Lainnya" digabung jadi satu.
+  String _catKey(String c) {
+    final t = c.trim();
+    return RegExp(r'^lainnya', caseSensitive: false).hasMatch(t) ? 'Lainnya' : t;
+  }
+
+  bool _catMatch(Mitra m) {
+    if (_category == null) return true;
+    final key = _catKey(m.kategori);
+    final sel = _category!.toLowerCase();
+    return key == _category ||
+        key.toLowerCase().startsWith(sel) ||
+        m.kategori.toLowerCase().startsWith(sel);
+  }
+
+  List<Mitra> _apply(List<Mitra> all) {
     final q = _query.trim().toLowerCase();
-    return all.where((m) {
-      final okCat = _category == null || m.kategori.toLowerCase() == _category!.toLowerCase();
+    final list = all.where((m) {
       final okQ = q.isEmpty ||
           m.displayName.toLowerCase().contains(q) ||
           m.kategori.toLowerCase().contains(q) ||
           m.lokasi.toLowerCase().contains(q) ||
           m.deskripsi.toLowerCase().contains(q);
-      return okCat && okQ;
+      final okLoc = _loc == null || m.lokasi == _loc;
+      final okTrust = !_trusted || m.verified >= 1;
+      final okTop = !_topRated || m.rating >= 4.5;
+      return _catMatch(m) && okQ && okLoc && okTrust && okTop;
     }).toList();
+
+    switch (_sort) {
+      case 'rating':
+        list.sort((a, b) => b.rating.compareTo(a.rating));
+        break;
+      case 'verif':
+        list.sort((a, b) {
+          final c = b.verified.compareTo(a.verified);
+          return c != 0 ? c : b.rating.compareTo(a.rating);
+        });
+        break;
+      case 'nama':
+        list.sort((a, b) =>
+            a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
+        break;
+      default:
+        list.sort((a, b) {
+          final s = b.promoted.compareTo(a.promoted);
+          if (s != 0) return s;
+          final v = b.verified.compareTo(a.verified);
+          if (v != 0) return v;
+          return b.rating.compareTo(a.rating);
+        });
+    }
+    return list;
   }
 
   void _openDetail(Mitra m) =>
@@ -73,63 +119,261 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
         ],
       ),
-      body: Column(
-        children: [
-          _chips(),
-          const Divider(height: 1),
-          Expanded(
-            child: FutureBuilder<List<Mitra>>(
-              future: _future,
-              builder: (context, snap) {
-                if (snap.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snap.hasError) {
-                  return const Center(child: Text('Gagal memuat data.'));
-                }
-                final list = _filter(snap.data ?? []);
-                if (list.isEmpty) {
-                  return const Center(child: Text('Tidak ada mitra yang cocok.'));
-                }
-                return ListView(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  children: list.map((m) => MitraCard(m: m, onTap: () => _openDetail(m))).toList(),
-                );
-              },
-            ),
-          ),
-        ],
+      body: FutureBuilder<List<Mitra>>(
+        future: _future,
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snap.hasError) {
+            return const Center(child: Text('Gagal memuat data.'));
+          }
+          final all = snap.data ?? [];
+
+          final counts = <String, int>{};
+          for (final m in all) {
+            final k = _catKey(m.kategori);
+            counts[k] = (counts[k] ?? 0) + 1;
+          }
+          final cats = counts.keys.toList()
+            ..sort((a, b) => counts[b]!.compareTo(counts[a]!));
+          final locs = all
+              .map((m) => m.lokasi.trim())
+              .where((l) => l.isNotEmpty)
+              .toSet()
+              .toList()
+            ..sort();
+
+          final list = _apply(all);
+
+          return Column(
+            children: [
+              _categoryBar(cats, counts, all.length),
+              _filterBar(locs),
+              _resultBar(list.length),
+              const Divider(height: 1),
+              Expanded(
+                child: list.isEmpty
+                    ? const Center(child: Text('Tidak ada mitra yang cocok.'))
+                    : ListView(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        children: list
+                            .map((m) => MitraCard(m: m, onTap: () => _openDetail(m)))
+                            .toList(),
+                      ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _chips() {
+  // ── Bar kategori dengan icon + jumlah ────────────────────────
+  Widget _categoryBar(List<String> cats, Map<String, int> counts, int total) {
     return SizedBox(
-      height: 50,
+      height: 52,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         children: [
-          _chip('Semua', _category == null, () => setState(() => _category = null)),
-          ...Api.kategoriDasar.map(
-            (c) => _chip(c, _category == c, () => setState(() => _category = c)),
+          _catChip(
+            label: 'Semua',
+            icon: Icon(Icons.public,
+                size: 16, color: _category == null ? Colors.white : kBrand),
+            count: total,
+            active: _category == null,
+            onTap: () => setState(() => _category = null),
           ),
+          ...cats.map((c) {
+            final active = _category == c;
+            return _catChip(
+              label: c,
+              icon: SizedBox(
+                width: 16,
+                height: 16,
+                child: SekitaImage(catIconPath(c), fit: BoxFit.contain),
+              ),
+              count: counts[c] ?? 0,
+              active: active,
+              onTap: () => setState(() => _category = active ? null : c),
+            );
+          }),
         ],
       ),
     );
   }
 
-  Widget _chip(String label, bool active, VoidCallback onTap) {
+  Widget _catChip({
+    required String label,
+    required Widget icon,
+    required int count,
+    required bool active,
+    required VoidCallback onTap,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: active,
-        onSelected: (_) => onTap(),
-        selectedColor: kBrand,
-        labelStyle: TextStyle(color: active ? Colors.white : kInk, fontSize: 13),
-        backgroundColor: Colors.white,
-        shape: StadiumBorder(side: BorderSide(color: active ? kBrand : const Color(0xFFE5E7EB))),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: active ? kBrand : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: active ? kBrand : const Color(0xFFE5E7EB)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              icon,
+              const SizedBox(width: 6),
+              Text(label,
+                  style: TextStyle(
+                      color: active ? Colors.white : kInk,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600)),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                decoration: BoxDecoration(
+                  color: active
+                      ? Colors.white.withOpacity(0.25)
+                      : const Color(0xFFEFF4FF),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text('$count',
+                    style: TextStyle(
+                        color: active ? Colors.white : kBrand,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Bar filter cepat + lokasi ───────────────────────────
+  Widget _filterBar(List<String> locs) {
+    return SizedBox(
+      height: 46,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        children: [
+          _toggle(Icons.verified_user_outlined, 'Tepercaya', _trusted,
+              () => setState(() => _trusted = !_trusted)),
+          _toggle(Icons.star_outline, 'Rating 4.5+', _topRated,
+              () => setState(() => _topRated = !_topRated)),
+          _locChip(locs),
+        ],
+      ),
+    );
+  }
+
+  Widget _toggle(IconData ic, String label, bool active, VoidCallback onTap) {
+    final c = active ? kBrand : kInk;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: active ? kBrand.withOpacity(0.10) : Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: active ? kBrand : const Color(0xFFE5E7EB)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(ic, size: 15, color: c),
+              const SizedBox(width: 5),
+              Text(label,
+                  style: TextStyle(
+                      color: c, fontSize: 12.5, fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _locChip(List<String> locs) {
+    final active = _loc != null;
+    final c = active ? kBrand : kInk;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: PopupMenuButton<String>(
+        onSelected: (v) => setState(() => _loc = v.isEmpty ? null : v),
+        itemBuilder: (_) => [
+          const PopupMenuItem(value: '', child: Text('Semua lokasi')),
+          ...locs.map((l) => PopupMenuItem(value: l, child: Text(l))),
+        ],
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: active ? kBrand.withOpacity(0.10) : Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: active ? kBrand : const Color(0xFFE5E7EB)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.location_on_outlined, size: 15, color: c),
+              const SizedBox(width: 5),
+              Text(_loc ?? 'Lokasi',
+                  style: TextStyle(
+                      color: c, fontSize: 12.5, fontWeight: FontWeight.w600)),
+              Icon(Icons.arrow_drop_down, size: 18, color: c),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Baris jumlah hasil + urutkan ─────────────────────────
+  Widget _resultBar(int n) {
+    const labels = {
+      'rekomendasi': 'Rekomendasi',
+      'rating': 'Rating tertinggi',
+      'verif': 'Paling terverifikasi',
+      'nama': 'Nama A-Z',
+    };
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 2, 8, 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text('$n penyedia ditemukan',
+                style: TextStyle(color: Colors.grey[600], fontSize: 12.5)),
+          ),
+          PopupMenuButton<String>(
+            onSelected: (v) => setState(() => _sort = v),
+            itemBuilder: (_) => labels.entries
+                .map((e) => CheckedPopupMenuItem<String>(
+                      value: e.key,
+                      checked: _sort == e.key,
+                      child: Text(e.value),
+                    ))
+                .toList(),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.swap_vert, size: 18, color: kBrand),
+                const SizedBox(width: 3),
+                Text('Urutkan',
+                    style: TextStyle(
+                        color: kBrand,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600)),
+                const Icon(Icons.arrow_drop_down, size: 18, color: kBrand),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
