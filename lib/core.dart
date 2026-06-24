@@ -61,28 +61,19 @@ IconData iconForKategori(String c) {
   }
 }
 
-// Path relatif ke aset di sekita.id. SekitaImage otomatis menambah host.
+// Path relatif ke aset kategori di sekita.id. Cocokkan dgn prefix supaya
+// kategori seperti "Lainnya (Maklon ...)" tetap dapat icon yang benar.
 String catIconPath(String c) {
-  switch (c) {
-    case 'Terapis':
-      return 'assets/img/cat/terapis.png';
-    case 'Tukang':
-      return 'assets/img/cat/tukang.png';
-    case 'Transportasi':
-      return 'assets/img/cat/transportasi.png';
-    case 'Servis AC':
-      return 'assets/img/cat/ac.png';
-    case 'Kebersihan':
-      return 'assets/img/cat/kebersihan.png';
-    case 'Les Privat':
-      return 'assets/img/cat/les.png';
-    case 'Fotografer':
-      return 'assets/img/cat/foto.png';
-    case 'MUA':
-      return 'assets/img/cat/mua.png';
-    default:
-      return 'assets/img/cat/lainnya.png';
-  }
+  final lc = c.toLowerCase().trim();
+  if (lc.startsWith('terapis')) return 'assets/img/cat/terapis.png';
+  if (lc.startsWith('tukang')) return 'assets/img/cat/tukang.png';
+  if (lc.startsWith('transportasi')) return 'assets/img/cat/transportasi.png';
+  if (lc.startsWith('servis ac') || lc == 'ac') return 'assets/img/cat/ac.png';
+  if (lc.startsWith('kebersihan')) return 'assets/img/cat/kebersihan.png';
+  if (lc.startsWith('les')) return 'assets/img/cat/les.png';
+  if (lc.startsWith('fotografer') || lc.startsWith('foto')) return 'assets/img/cat/foto.png';
+  if (lc.startsWith('mua')) return 'assets/img/cat/mua.png';
+  return 'assets/img/cat/lainnya.png';
 }
 
 String bannerPath(int n) => 'assets/img/banner/banner-$n.jpg';

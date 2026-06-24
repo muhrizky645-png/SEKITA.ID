@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'api.dart';
 import 'core.dart';
@@ -17,7 +18,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late Future<List<Mitra>> _mitraFuture;
   Future<List<Kebutuhan>>? _myFuture;
-  final _pageCtrl = PageController();
+  late final PageController _pageCtrl;
+  Timer? _autoTimer;
   int _bannerIdx = 0;
   static const int _bannerCount = 5;
 
@@ -28,10 +30,21 @@ class _HomeScreenState extends State<HomeScreen> {
     if (Api.currentUser != null) {
       _myFuture = Api.fetchKebutuhanMine();
     }
+    // Mulai dari kelipatan besar supaya bisa geser kiri tanpa henti.
+    _pageCtrl = PageController(initialPage: _bannerCount * 1000);
+    _autoTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (_pageCtrl.hasClients) {
+        _pageCtrl.nextPage(
+          duration: const Duration(milliseconds: 450),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
   }
 
   @override
   void dispose() {
+    _autoTimer?.cancel();
     _pageCtrl.dispose();
     super.dispose();
   }
@@ -159,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Banner: gambar asli dari sekita.id (1600x400 = 4:1) ─────────────────────
+  // ── Banner auto-scroll (3 detik, infinite ke kiri) ───────────────────────
   Widget _banners(BuildContext context) {
     final w = MediaQuery.of(context).size.width - 32;
     final h = w / 4;
@@ -169,9 +182,9 @@ class _HomeScreenState extends State<HomeScreen> {
           height: h,
           child: PageView.builder(
             controller: _pageCtrl,
-            itemCount: _bannerCount,
-            onPageChanged: (i) => setState(() => _bannerIdx = i),
+            onPageChanged: (i) => setState(() => _bannerIdx = i % _bannerCount),
             itemBuilder: (_, i) {
+              final n = (i % _bannerCount) + 1;
               return GestureDetector(
                 onTap: _openSearch,
                 child: Container(
@@ -181,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(16),
                     color: const Color(0xFFE5E7EB),
                   ),
-                  child: SekitaImage(bannerPath(i + 1), fit: BoxFit.cover),
+                  child: SekitaImage(bannerPath(n), fit: BoxFit.cover),
                 ),
               );
             },
@@ -208,15 +221,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Kategori horizontal scroll dengan icon asli (lebih kecil) ─────────────────
+  // ── Kategori: icon dibungkus kotak (seperti card mitra) ────────────────────
   Widget _categories() {
     return SizedBox(
-      height: 80,
+      height: 90,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: Api.kategoriDasar.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 16),
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (_, i) {
           final c = Api.kategoriDasar[i];
           return GestureDetector(
@@ -224,17 +237,20 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(13),
-                  child: SizedBox(
-                    width: 44,
-                    height: 44,
-                    child: SekitaImage(catIconPath(c), fit: BoxFit.cover),
+                Container(
+                  width: 58,
+                  height: 58,
+                  padding: const EdgeInsets.all(9),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
                   ),
+                  child: SekitaImage(catIconPath(c), fit: BoxFit.contain),
                 ),
                 const SizedBox(height: 6),
                 SizedBox(
-                  width: 58,
+                  width: 60,
                   child: Text(c,
                       textAlign: TextAlign.center,
                       maxLines: 2,
@@ -340,31 +356,32 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _emptyKebutuhanBox() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 16),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: Column(
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 64,
+            height: 64,
             decoration: const BoxDecoration(
               color: Color(0xFFEFF4FF),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.assignment_outlined, color: kBrand, size: 26),
+            child: const Icon(Icons.assignment_outlined, color: kBrand, size: 32),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           const Text('Kamu belum punya kebutuhan terbaru',
               textAlign: TextAlign.center,
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-          const SizedBox(height: 4),
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+          const SizedBox(height: 6),
           Text('Posting kebutuhanmu, biar mitra yang datang 🙌',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+              style: TextStyle(fontSize: 13, color: Colors.grey[600])),
         ],
       ),
     );
