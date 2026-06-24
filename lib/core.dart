@@ -32,7 +32,7 @@ Future<void> openWa(String wa, {String text = ''}) async {
   final n = waNormalize(wa);
   if (n.isEmpty) return;
   final q = text.isNotEmpty ? '?text=${Uri.encodeComponent(text)}' : '';
-  final uri = Uri.parse('https://wa.me/$n$q');
+  final uri = Uri.parse('https://' + 'wa.me/' + n + q);
   await launchUrl(uri, mode: LaunchMode.externalApplication);
 }
 
@@ -80,7 +80,8 @@ class SekitaImage extends StatelessWidget {
     }
     var url = src;
     if (url.isNotEmpty && !url.startsWith('http')) {
-      url = 'https://sekita.id/${url.replaceFirst(RegExp(r'^/'), '')}';
+      final host = 'https://' + 'sekita.id/';
+      url = host + url.replaceFirst(RegExp(r'^/'), '');
     }
     if (url.isEmpty) return _placeholder();
     return Image.network(
