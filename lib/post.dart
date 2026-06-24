@@ -20,6 +20,19 @@ class _PostKebutuhanScreenState extends State<PostKebutuhanScreen> {
   bool _sending = false;
 
   @override
+  void initState() {
+    super.initState();
+    _prefillFromUser();
+  }
+
+  void _prefillFromUser() {
+    final u = Api.currentUser;
+    if (u == null) return;
+    if (u.nama.isNotEmpty) _nama.text = u.nama;
+    if (u.wa.isNotEmpty) _wa.text = u.wa;
+  }
+
+  @override
   void dispose() {
     _title.dispose();
     _lokasi.dispose();
@@ -50,9 +63,9 @@ class _PostKebutuhanScreenState extends State<PostKebutuhanScreen> {
       _lokasi.clear();
       _deskripsi.clear();
       _budget.clear();
-      _wa.clear();
-      _nama.clear();
       setState(() => _kategori = Api.kategoriDasar.first);
+      // prefill ulang nama & WA setelah reset
+      _prefillFromUser();
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
@@ -73,6 +86,7 @@ class _PostKebutuhanScreenState extends State<PostKebutuhanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLoggedIn = Api.currentUser != null;
     return Scaffold(
       appBar: AppBar(title: const Text('Posting Kebutuhan')),
       body: SafeArea(
@@ -81,6 +95,28 @@ class _PostKebutuhanScreenState extends State<PostKebutuhanScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              if (!isLoggedIn)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF4FF),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFBFD1FF)),
+                  ),
+                  child: Row(
+                    children: const [
+                      Icon(Icons.info_outline, color: kBrand, size: 18),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Login dulu biar nama & WA terisi otomatis & postingan tersimpan ke akunmu.',
+                          style: TextStyle(fontSize: 12, color: Color(0xFF1E40AF)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               const Text('Ceritakan jasa yang kamu butuhkan, mitra terkait akan dapat notifikasi.',
                   style: TextStyle(color: Colors.grey)),
               const SizedBox(height: 16),

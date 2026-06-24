@@ -92,6 +92,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _header() {
+    final user = Api.currentUser;
+    final subtitle = (user != null && user.nama.isNotEmpty)
+        ? 'Hai, ${user.nama.split(' ').first}! 👋'
+        : 'Temukan jasa profesional di sekitarmu';
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
       child: Row(
@@ -105,10 +109,10 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(width: 10),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text('Sekita', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20, color: kInk)),
-              Text('Temukan jasa profesional di sekitarmu',
-                  style: TextStyle(fontSize: 11, color: Colors.grey)),
+            children: [
+              const Text('Sekita',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20, color: kInk)),
+              Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.grey)),
             ],
           ),
         ],
