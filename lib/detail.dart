@@ -14,12 +14,14 @@ class MitraDetailScreen extends StatefulWidget {
 class _MitraDetailScreenState extends State<MitraDetailScreen> {
   late Future<List<String>> _porto;
   late Future<List<Ulasan>> _ulasan;
+  late Future<String> _cover;
 
   @override
   void initState() {
     super.initState();
     _porto = Api.fetchPortfolio(widget.mitra.id);
     _ulasan = Api.fetchUlasan(widget.mitra.id);
+    _cover = Api.fetchCover(widget.mitra.id);
   }
 
   @override
@@ -48,19 +50,42 @@ class _MitraDetailScreenState extends State<MitraDetailScreen> {
     );
   }
 
+  // ── Header: foto sampul + avatar overlap + info ──────────────────────
   Widget _head(Mitra m) {
+    final t = verifTierFor(m.verified);
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.all(16),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: SizedBox(width: 80, height: 80, child: MitraAvatar(m: m)),
+          SizedBox(
+            height: 188,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(top: 0, left: 0, right: 0, child: _coverView()),
+                Positioned(
+                  left: 16,
+                  bottom: 0,
+                  child: Container(
+                    width: 88,
+                    height: 88,
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(15),
+                      child: MitraAvatar(m: m),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(width: 14),
-          Expanded(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -68,51 +93,134 @@ class _MitraDetailScreenState extends State<MitraDetailScreen> {
                   children: [
                     Flexible(
                       child: Text(m.displayName,
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w800, fontSize: 19)),
                     ),
-                    if (m.verified > 0)
-                      const Padding(
-                        padding: EdgeInsets.only(left: 5),
-                        child: Icon(Icons.verified, size: 18, color: kBrand),
+                    if (m.verified >= 1)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 5),
+                        child: Icon(Icons.verified, size: 18, color: t.color),
                       ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEFF4FF),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(m.kategori,
-                      style: const TextStyle(fontSize: 12, color: kBrand, fontWeight: FontWeight.w600)),
-                ),
                 const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF4FF),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(m.kategori,
+                          style: const TextStyle(
+                              fontSize: 12,
+                              color: kBrand,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                    if (m.verified >= 1) _verifBadge(m),
+                  ],
+                ),
+                const SizedBox(height: 10),
                 Row(
                   children: [
-                    Icon(Icons.location_on_outlined, size: 15, color: Colors.grey[500]),
+                    Icon(Icons.location_on_outlined,
+                        size: 15, color: Colors.grey[500]),
                     const SizedBox(width: 3),
                     Flexible(
                       child: Text(m.lokasi.isEmpty ? '-' : m.lokasi,
-                          style: TextStyle(color: Colors.grey[700], fontSize: 13)),
+                          style:
+                              TextStyle(color: Colors.grey[700], fontSize: 13)),
                     ),
-                  ],
-                ),
-                if (m.rating > 0) ...[
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
+                    if (m.rating > 0) ...[
+                      const SizedBox(width: 10),
                       const Icon(Icons.star, size: 15, color: Color(0xFFF59E0B)),
                       const SizedBox(width: 3),
                       Text(m.rating.toStringAsFixed(1),
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                          style: const TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w600)),
                     ],
-                  ),
-                ],
+                  ],
+                ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _coverView() {
+    return FutureBuilder<String>(
+      future: _cover,
+      builder: (context, snap) {
+        final cover = snap.data ?? '';
+        return Container(
+          height: 150,
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [kBrand, kBrandDark],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: cover.isEmpty
+              ? null
+              : SekitaImage(cover, fit: BoxFit.cover),
+        );
+      },
+    );
+  }
+
+  // Badge verif berketerangan — tap untuk lihat penjelasan tingkat.
+  Widget _verifBadge(Mitra m) {
+    final t = verifTierFor(m.verified);
+    return GestureDetector(
+      onTap: () => showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.verified, color: t.color),
+              const SizedBox(width: 8),
+              Expanded(child: Text('Mitra ${t.label}')),
+            ],
+          ),
+          content: Text(t.desc, style: const TextStyle(height: 1.5)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Mengerti'),
+            ),
+          ],
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: t.color.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.verified, size: 14, color: t.color),
+            const SizedBox(width: 5),
+            Text('Mitra ${t.label}',
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: t.color)),
+            const SizedBox(width: 4),
+            Icon(Icons.info_outline,
+                size: 13, color: t.color.withOpacity(0.7)),
+          ],
+        ),
       ),
     );
   }
@@ -143,9 +251,17 @@ class _MitraDetailScreenState extends State<MitraDetailScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: imgs.length,
             separatorBuilder: (_, __) => const SizedBox(width: 8),
-            itemBuilder: (_, i) => ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: SizedBox(width: 120, height: 120, child: SekitaImage(imgs[i])),
+            itemBuilder: (_, i) => GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => _PhotoViewer(images: imgs, index: i),
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(width: 120, height: 120, child: SekitaImage(imgs[i])),
+              ),
             ),
           ),
         );
@@ -221,9 +337,62 @@ class _MitraDetailScreenState extends State<MitraDetailScreen> {
                 : () => openWa(m.wa,
                     text: 'Halo ${m.displayName}, saya menemukan Anda di aplikasi Sekita. '
                         'Saya tertarik dengan jasa ${m.kategori}.'),
-            icon: const Icon(Icons.chat),
-            label: const Text('Hubungi via WhatsApp',
+            icon: const Icon(Icons.chat_rounded),
+            label: const Text('WhatsApp',
                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Penampil foto portofolio layar penuh (pinch-zoom + geser) ───────────
+class _PhotoViewer extends StatefulWidget {
+  final List<String> images;
+  final int index;
+  const _PhotoViewer({required this.images, required this.index});
+  @override
+  State<_PhotoViewer> createState() => _PhotoViewerState();
+}
+
+class _PhotoViewerState extends State<_PhotoViewer> {
+  late final PageController _pc;
+  late int _cur;
+
+  @override
+  void initState() {
+    super.initState();
+    _cur = widget.index;
+    _pc = PageController(initialPage: widget.index);
+  }
+
+  @override
+  void dispose() {
+    _pc.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: Text('${_cur + 1} / ${widget.images.length}',
+            style: const TextStyle(fontSize: 14, color: Colors.white)),
+      ),
+      body: PageView.builder(
+        controller: _pc,
+        onPageChanged: (i) => setState(() => _cur = i),
+        itemCount: widget.images.length,
+        itemBuilder: (_, i) => Center(
+          child: InteractiveViewer(
+            minScale: 1,
+            maxScale: 4,
+            child: SekitaImage(widget.images[i], fit: BoxFit.contain),
           ),
         ),
       ),

@@ -78,6 +78,34 @@ String catIconPath(String c) {
 
 String bannerPath(int n) => 'assets/img/banner/banner-$n.jpg';
 
+// ── Verifikasi mitra (selaras dgn VERIF_TIERS di web) ────────────────────
+// Level 0 (Pemula/abu-abu) tidak ditampilkan sebagai badge. Hanya 1/2/3.
+class VerifTier {
+  final int level;
+  final String label;
+  final Color color;
+  final String desc;
+  const VerifTier(this.level, this.label, this.color, this.desc);
+}
+
+const List<VerifTier> kVerifTiers = [
+  VerifTier(0, 'Pemula', Color(0xFF94A3B8),
+      'Mitra baru terdaftar, belum melengkapi verifikasi'),
+  VerifTier(1, 'Tepercaya', Color(0xFF16A34A),
+      'Profil lengkap + WhatsApp & email terverifikasi'),
+  VerifTier(2, 'Terverifikasi', Color(0xFF2563EB),
+      'Foto diri & KTP terverifikasi'),
+  VerifTier(3, 'Pro', Color(0xFF7C3AED),
+      'Verifikasi penuh: foto diri & KTP + surat izin usaha'),
+];
+
+VerifTier verifTierFor(int level) {
+  var l = level;
+  if (l < 0) l = 0;
+  if (l > 3) l = 3;
+  return kVerifTiers[l];
+}
+
 class SekitaImage extends StatelessWidget {
   final String src;
   final double? width;
