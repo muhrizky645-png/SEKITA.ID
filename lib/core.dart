@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'models.dart';
 
 const kBrand = Color(0xFF2563EB);
 const kBrandDark = Color(0xFF1D4ED8);
@@ -104,6 +105,40 @@ VerifTier verifTierFor(int level) {
   if (l < 0) l = 0;
   if (l > 3) l = 3;
   return kVerifTiers[l];
+}
+
+// ── Sponsor (selaras dgn sponsorOn & sortPromoted di web) ─────────────
+// 3 paket: 'beranda' (hanya di beranda), 'kategori' (hanya di halaman
+// kategori/cari), 'bundle' (tampil di mana saja). Paket kosong = sponsor lama
+// yang dianggap tampil di mana saja.
+bool sponsorOn(Mitra m, String surface) {
+  if (m.promoted <= 0) return false;
+  final plan = m.sponsorPlan.toLowerCase().trim();
+  if (plan == 'bundle' || plan.isEmpty) return true;
+  if (surface == 'beranda') return plan == 'beranda';
+  if (surface == 'kategori') return plan == 'kategori';
+  return true;
+}
+
+// Angkat mitra bersponsor (sesuai permukaan) ke atas daftar, dgn rotasi adil
+// tiap 10 menit bila ada lebih dari satu sponsor.
+List<Mitra> sortPromoted(List<Mitra> arr, String surface) {
+  final promo = <Mitra>[];
+  final rest = <Mitra>[];
+  for (final m in arr) {
+    if (sponsorOn(m, surface)) {
+      promo.add(m);
+    } else {
+      rest.add(m);
+    }
+  }
+  if (promo.length > 1) {
+    final win = DateTime.now().millisecondsSinceEpoch ~/ 600000;
+    final off = win % promo.length;
+    final rotated = [...promo.sublist(off), ...promo.sublist(0, off)];
+    return [...rotated, ...rest];
+  }
+  return [...promo, ...rest];
 }
 
 class SekitaImage extends StatelessWidget {

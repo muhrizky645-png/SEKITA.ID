@@ -80,9 +80,12 @@ class _SearchScreenState extends State<SearchScreen> {
             a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
         break;
       default:
+        // Rekomendasi: sponsor (paket kategori/bundle) naik, lalu verifikasi,
+        // lalu rating. Selaras dgn sortPromoted('kategori') di web.
         list.sort((a, b) {
-          final s = b.promoted.compareTo(a.promoted);
-          if (s != 0) return s;
+          final sa = sponsorOn(a, 'kategori') ? 1 : 0;
+          final sb = sponsorOn(b, 'kategori') ? 1 : 0;
+          if (sa != sb) return sb - sa;
           final v = b.verified.compareTo(a.verified);
           if (v != 0) return v;
           return b.rating.compareTo(a.rating);
@@ -158,7 +161,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     : ListView(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         children: list
-                            .map((m) => MitraCard(m: m, onTap: () => _openDetail(m)))
+                            .map((m) => MitraCard(m: m, surface: 'kategori', onTap: () => _openDetail(m)))
                             .toList(),
                       ),
               ),

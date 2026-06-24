@@ -91,10 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
               }
               if (snap.hasError) return _ErrorView(onRetry: _reload);
               final all = snap.data ?? [];
-              final sorted = [
-                ...all.where((m) => m.promoted > 0),
-                ...all.where((m) => m.promoted == 0),
-              ];
+              final sorted = sortPromoted(all, 'beranda');
               final shown = sorted.take(_maxMitraBeranda).toList();
               return ListView(
                 padding: EdgeInsets.zero,
@@ -113,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: EdgeInsets.all(32),
                       child: Center(child: Text('Belum ada mitra.')),
                     ),
-                  ...shown.map((m) => MitraCard(m: m, onTap: () => _openDetail(m))),
+                  ...shown.map((m) => MitraCard(m: m, surface: 'beranda', onTap: () => _openDetail(m))),
                   if (sorted.length > _maxMitraBeranda) _lihatMitraLain(),
                   const SizedBox(height: 24),
                 ],
@@ -145,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _header(dynamic user) {
     final subtitle = (user != null && (user.nama as String).isNotEmpty)
-        ? 'Hai, ${(user.nama as String).split(' ').first}! 👋'
+        ? 'Hai, ${(user.nama as String).split(' ').first}! \ud83d\udc4b'
         : 'Temukan jasa profesional di sekitarmu';
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
@@ -195,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Banner auto-scroll (3 detik, infinite ke kiri) ───────────────────────
+  // ── Banner auto-scroll (3 detik, infinite ke kiri) ──────────────────────
   Widget _banners(BuildContext context) {
     final w = MediaQuery.of(context).size.width - 32;
     final h = w / 4;
@@ -244,7 +241,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Kategori: icon dibungkus kotak (seperti card mitra) ────────────────────
+  // ── Kategori: icon dibungkus kotak (seperti card mitra) ──────────────────
   Widget _categories() {
     return SizedBox(
       height: 90,
@@ -300,7 +297,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: Row(
           children: [
-            const Text('📝', style: TextStyle(fontSize: 24)),
+            const Text('\ud83d\udcdd', style: TextStyle(fontSize: 24)),
             const SizedBox(width: 10),
             const Expanded(
               child: Text(
@@ -327,7 +324,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Kebutuhanmu Terbaru (mode pembeli) ───────────────────────────────
+  // ── Kebutuhanmu Terbaru (mode pembeli) ─────────────────────
   Widget _myKebutuhanSection() {
     return FutureBuilder<List<Kebutuhan>>(
       future: _myFuture,
@@ -357,7 +354,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (list.isNotEmpty)
                     GestureDetector(
                       onTap: _goKebutuhan,
-                      child: const Text('Lihat semua →',
+                      child: const Text('Lihat semua \u2192',
                           style: TextStyle(
                               fontSize: 12,
                               color: kBrand,
@@ -402,7 +399,7 @@ class _HomeScreenState extends State<HomeScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
           const SizedBox(height: 6),
-          Text('Posting kebutuhanmu, biar mitra yang datang 🙌',
+          Text('Posting kebutuhanmu, biar mitra yang datang \ud83d\ude4c',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: Colors.grey[600])),
         ],
@@ -421,7 +418,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Row(
         children: [
-          Text(k.ic.isEmpty ? '📝' : k.ic,
+          Text(k.ic.isEmpty ? '\ud83d\udcdd' : k.ic,
               style: const TextStyle(fontSize: 20)),
           const SizedBox(width: 10),
           Expanded(
