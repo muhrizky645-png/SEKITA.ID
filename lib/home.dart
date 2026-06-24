@@ -17,6 +17,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late Future<List<Mitra>> _mitraFuture;
   Future<List<Kebutuhan>>? _myFuture;
+  final _pageCtrl = PageController();
+  int _bannerIdx = 0;
 
   @override
   void initState() {
@@ -27,14 +29,16 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  @override
+  void dispose() {
+    _pageCtrl.dispose();
+    super.dispose();
+  }
+
   Future<void> _reload() async {
     setState(() {
       _mitraFuture = Api.fetchMitra();
-      if (Api.currentUser != null) {
-        _myFuture = Api.fetchKebutuhanMine();
-      } else {
-        _myFuture = null;
-      }
+      _myFuture = Api.currentUser != null ? Api.fetchKebutuhanMine() : null;
     });
     await _mitraFuture;
   }
@@ -68,43 +72,31 @@ class _HomeScreenState extends State<HomeScreen> {
               if (snap.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
-              if (snap.hasError) {
-                return _ErrorView(onRetry: _reload);
-              }
+              if (snap.hasError) return _ErrorView(onRetry: _reload);
               final all = snap.data ?? [];
-              final promoted = all.where((m) => m.promoted > 0).toList();
-              final rest = all.where((m) => m.promoted == 0).toList();
+              // promoted muncul duluan
+              final sorted = [
+                ...all.where((m) => m.promoted > 0),
+                ...all.where((m) => m.promoted == 0),
+              ];
               return ListView(
                 padding: EdgeInsets.zero,
                 children: [
                   _header(user),
                   _searchBar(),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
+                  _banners(),
+                  const SizedBox(height: 14),
                   _categories(),
-                  // ─ Guest: banner CTA login/posting ─
                   if (user == null) _guestBanner(),
-                  // ─ Pembeli: kebutuhan saya ─
                   if (user != null && _myFuture != null) _myKebutuhanSection(),
-                  if (promoted.isNotEmpty) ...[
-                    _sectionTitle('Mitra Pilihan'),
-                    SizedBox(
-                      height: 92,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: promoted.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 10),
-                        itemBuilder: (_, i) => _promoCard(promoted[i]),
-                      ),
-                    ),
-                  ],
-                  _sectionTitle('Semua Mitra'),
-                  if (all.isEmpty)
+                  _sectionTitle('Mitra'),
+                  if (sorted.isEmpty)
                     const Padding(
                       padding: EdgeInsets.all(32),
                       child: Center(child: Text('Belum ada mitra.')),
                     ),
-                  ...rest.map((m) => MitraCard(m: m, onTap: () => _openDetail(m))),
+                  ...sorted.map((m) => MitraCard(m: m, onTap: () => _openDetail(m))),
                   const SizedBox(height: 24),
                 ],
               );
@@ -117,7 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ── Header ──────────────────────────────────────────────────────────
   Widget _header(dynamic user) {
-    final subtitle = (user != null && user.nama.isNotEmpty)
+    final subtitle = (user != null && (user.nama as String).isNotEmpty)
         ? 'Hai, ${(user.nama as String).split(' ').first}! 👋'
         : 'Temukan jasa profesional di sekitarmu';
     return Container(
@@ -147,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── Search bar ────────────────────────────────────────────────────
   Widget _searchBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GestureDetector(
         onTap: _openSearch,
         child: Container(
@@ -169,90 +161,183 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Kategori grid ─────────────────────────────────────────────────
-  Widget _categories() {
-    final w = (MediaQuery.of(context).size.width - 24) / 4;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Wrap(
-        spacing: 4,
-        runSpacing: 4,
-        children: Api.kategoriDasar.map((c) {
-          return SizedBox(
-            width: w,
-            child: InkWell(
-              onTap: () => _openCategory(c),
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEFF4FF),
-                        borderRadius: BorderRadius.circular(14),
+  // ── Banner (PageView) ───────────────────────────────────────────────
+  static const _bannerData = [
+    (
+      emoji: '🔍',
+      title: 'Temukan jasa terpercaya di Jogja',
+      subtitle: 'Lebih dari 20 mitra siap membantumu',
+      grad: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+      action: 'Cari Sekarang',
+    ),
+    (
+      emoji: '🏆',
+      title: 'Jadilah Mitra Sekita',
+      subtitle: 'Dapatkan lebih banyak pelanggan dari Jogja',
+      grad: [Color(0xFF0F766E), Color(0xFF0D9488)],
+      action: 'Daftar Mitra',
+    ),
+  ];
+
+  Widget _banners() {
+    return Column(
+      children: [
+        SizedBox(
+          height: 118,
+          child: PageView.builder(
+            controller: _pageCtrl,
+            itemCount: _bannerData.length,
+            onPageChanged: (i) => setState(() => _bannerIdx = i),
+            itemBuilder: (_, i) {
+              final b = _bannerData[i];
+              return GestureDetector(
+                onTap: i == 0 ? _openSearch : _goAkun,
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                        colors: b.grad,
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(b.emoji, style: const TextStyle(fontSize: 36)),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(b.title,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14)),
+                            const SizedBox(height: 4),
+                            Text(b.subtitle,
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 12)),
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(b.action,
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: b.grad.first)),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: Icon(iconForKategori(c), color: kBrand, size: 22),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(c,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        style: const TextStyle(fontSize: 11, height: 1.1)),
-                  ],
+                    ],
+                  ),
                 ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            _bannerData.length,
+            (i) => AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: _bannerIdx == i ? 16 : 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: _bannerIdx == i ? kBrand : const Color(0xFFD1D5DB),
+                borderRadius: BorderRadius.circular(3),
               ),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Kategori horizontal scroll (1 baris) ───────────────────────────────
+  Widget _categories() {
+    return SizedBox(
+      height: 88,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: Api.kategoriDasar.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 14),
+        itemBuilder: (_, i) {
+          final c = Api.kategoriDasar[i];
+          return GestureDetector(
+            onTap: () => _openCategory(c),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF4FF),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(iconForKategori(c), color: kBrand, size: 26),
+                ),
+                const SizedBox(height: 6),
+                SizedBox(
+                  width: 56,
+                  child: Text(c,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      style: const TextStyle(fontSize: 10, height: 1.2)),
+                ),
+              ],
+            ),
           );
-        }).toList(),
+        },
       ),
     );
   }
 
-  // ── Guest banner ───────────────────────────────────────────────────
+  // ── Guest banner CTA ─────────────────────────────────────────────────
   Widget _guestBanner() {
     return GestureDetector(
       onTap: _goAkun,
       child: Container(
         margin: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
+          color: const Color(0xFFEFF4FF),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFBFD1FF)),
         ),
         child: Row(
           children: [
-            const Text('📝', style: TextStyle(fontSize: 28)),
-            const SizedBox(width: 12),
+            const Text('📝', style: TextStyle(fontSize: 24)),
+            const SizedBox(width: 10),
             const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Punya kebutuhan jasa?',
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
-                  SizedBox(height: 3),
-                  Text('Login & posting, mitra siap menghubungimu.',
-                      style: TextStyle(color: Colors.white70, fontSize: 12)),
-                ],
+              child: Text(
+                'Login untuk posting kebutuhan & lacak aktivitasmu.',
+                style: TextStyle(fontSize: 13, color: Color(0xFF1E40AF)),
               ),
             ),
             const SizedBox(width: 8),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: kBrand,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Text('Login',
                   style: TextStyle(
-                      color: Color(0xFF2563EB),
+                      color: Colors.white,
                       fontWeight: FontWeight.w700,
                       fontSize: 12)),
             ),
@@ -262,7 +347,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Kebutuhan Saya (pembeli login) ──────────────────────────────────
+  // ── Kebutuhan Saya ───────────────────────────────────────────────────
   Widget _myKebutuhanSection() {
     return FutureBuilder<List<Kebutuhan>>(
       future: _myFuture,
@@ -270,12 +355,15 @@ class _HomeScreenState extends State<HomeScreen> {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))),
+            child: Center(
+                child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2))),
           );
         }
         final list = snap.data ?? [];
         if (list.isEmpty) return const SizedBox.shrink();
-        final preview = list.take(3).toList();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -285,19 +373,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('Kebutuhanmu',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                      style:
+                          TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                   GestureDetector(
                     onTap: _goKebutuhan,
                     child: const Text('Lihat semua →',
                         style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF2563EB),
+                            color: kBrand,
                             fontWeight: FontWeight.w600)),
                   ),
                 ],
               ),
             ),
-            ...preview.map((k) => _miniCard(k)),
+            ...list.take(3).map((k) => _miniCard(k)),
           ],
         );
       },
@@ -315,7 +404,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Row(
         children: [
-          Text(k.ic.isEmpty ? '📝' : k.ic, style: const TextStyle(fontSize: 20)),
+          Text(k.ic.isEmpty ? '📝' : k.ic,
+              style: const TextStyle(fontSize: 20)),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -324,7 +414,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(k.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 14)),
                 Text(k.cat.isEmpty ? 'Umum' : k.cat,
                     style: TextStyle(fontSize: 12, color: Colors.grey[600])),
               ],
@@ -332,9 +423,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: k.isDone ? const Color(0xFFDCFCE7) : const Color(0xFFEFF4FF),
+              color: k.isDone
+                  ? const Color(0xFFDCFCE7)
+                  : const Color(0xFFEFF4FF),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -342,7 +436,9 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
-                color: k.isDone ? const Color(0xFF166534) : kBrand,
+                color: k.isDone
+                    ? const Color(0xFF166534)
+                    : kBrand,
               ),
             ),
           ),
@@ -355,49 +451,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _sectionTitle(String t) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 8),
-      child: Text(t, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-    );
-  }
-
-  // ── Promo card ─────────────────────────────────────────────────────
-  Widget _promoCard(Mitra m) {
-    return GestureDetector(
-      onTap: () => _openDetail(m),
-      child: Container(
-        width: 250,
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
-        ),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: SizedBox(width: 52, height: 52, child: MitraAvatar(m: m)),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(m.displayName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                  const SizedBox(height: 2),
-                  Text(m.kategori,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+      child:
+          Text(t, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
     );
   }
 }
