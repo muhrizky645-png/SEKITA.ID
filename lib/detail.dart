@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'api.dart';
 import 'core.dart';
 import 'models.dart';
@@ -359,7 +360,7 @@ class _MitraDetailScreenState extends State<MitraDetailScreen> {
                 : () => openWa(m.wa,
                     text: 'Halo ${m.displayName}, saya menemukan Anda di aplikasi Sekita. '
                         'Saya tertarik dengan jasa ${m.kategori}.'),
-            icon: const Icon(Icons.chat_rounded),
+            icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 22, color: Colors.white),
             label: const Text('WhatsApp',
                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
           ),
