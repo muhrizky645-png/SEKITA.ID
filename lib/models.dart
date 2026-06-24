@@ -11,6 +11,7 @@ class Mitra {
   final int kontak;
   final double rating;
   final int promoted;
+  final String sponsorPlan;
   final List<String> portfolioThumb;
 
   Mitra({
@@ -26,6 +27,7 @@ class Mitra {
     required this.kontak,
     required this.rating,
     required this.promoted,
+    required this.sponsorPlan,
     required this.portfolioThumb,
   });
 
@@ -49,6 +51,7 @@ class Mitra {
       kontak: toI(j['kontak']),
       rating: toD(j['rating']),
       promoted: toI(j['promoted']),
+      sponsorPlan: j['sponsorPlan'] == null ? '' : '${j['sponsorPlan']}',
       portfolioThumb: thumbs,
     );
   }
@@ -121,7 +124,7 @@ class Kebutuhan {
       title: '${j['title'] ?? ''}',
       loc: '${j['loc'] ?? ''}',
       cat: '${j['cat'] ?? ''}',
-      ic: '${j['ic'] ?? '📝'}',
+      ic: '${j['ic'] ?? '\ud83d\udcdd'}',
       budget: '${j['budget'] ?? ''}',
       deskripsi: '${j['deskripsi'] ?? ''}',
       status: '${j['status'] ?? 'open'}',

@@ -6,10 +6,15 @@ import 'models.dart';
 class MitraCard extends StatelessWidget {
   final Mitra m;
   final VoidCallback onTap;
-  const MitraCard({super.key, required this.m, required this.onTap});
+  /// Permukaan tempat kartu tampil: 'beranda' / 'kategori'. Menentukan apakah
+  /// badge "Sponsor" muncul sesuai paket sponsor mitra. Bila null -> pakai
+  /// status promoted apa adanya.
+  final String? surface;
+  const MitraCard({super.key, required this.m, required this.onTap, this.surface});
 
   @override
   Widget build(BuildContext context) {
+    final spon = surface == null ? m.promoted > 0 : sponsorOn(m, surface!);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       clipBehavior: Clip.antiAlias,
@@ -93,7 +98,7 @@ class MitraCard extends StatelessWidget {
                 ],
               ),
             ),
-            if (m.promoted > 0)
+            if (spon)
               Positioned(
                 right: 12,
                 bottom: 10,
