@@ -19,6 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<List<Kebutuhan>>? _myFuture;
   final _pageCtrl = PageController();
   int _bannerIdx = 0;
+  static const int _bannerCount = 5;
 
   @override
   void initState() {
@@ -74,7 +75,6 @@ class _HomeScreenState extends State<HomeScreen> {
               }
               if (snap.hasError) return _ErrorView(onRetry: _reload);
               final all = snap.data ?? [];
-              // promoted muncul duluan
               final sorted = [
                 ...all.where((m) => m.promoted > 0),
                 ...all.where((m) => m.promoted == 0),
@@ -85,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _header(user),
                   _searchBar(),
                   const SizedBox(height: 14),
-                  _banners(),
+                  _banners(context),
                   const SizedBox(height: 14),
                   _categories(),
                   if (user == null) _guestBanner(),
@@ -107,7 +107,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Header ──────────────────────────────────────────────────────────
   Widget _header(dynamic user) {
     final subtitle = (user != null && (user.nama as String).isNotEmpty)
         ? 'Hai, ${(user.nama as String).split(' ').first}! 👋'
@@ -136,7 +135,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Search bar ────────────────────────────────────────────────────
   Widget _searchBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -161,84 +159,29 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Banner (PageView) ───────────────────────────────────────────────
-  static const _bannerData = [
-    (
-      emoji: '🔍',
-      title: 'Temukan jasa terpercaya di Jogja',
-      subtitle: 'Lebih dari 20 mitra siap membantumu',
-      grad: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
-      action: 'Cari Sekarang',
-    ),
-    (
-      emoji: '🏆',
-      title: 'Jadilah Mitra Sekita',
-      subtitle: 'Dapatkan lebih banyak pelanggan dari Jogja',
-      grad: [Color(0xFF0F766E), Color(0xFF0D9488)],
-      action: 'Daftar Mitra',
-    ),
-  ];
-
-  Widget _banners() {
+  // ── Banner: gambar asli dari sekita.id (1600x400 = 4:1) ─────────────────────
+  Widget _banners(BuildContext context) {
+    final w = MediaQuery.of(context).size.width - 32;
+    final h = w / 4;
     return Column(
       children: [
         SizedBox(
-          height: 118,
+          height: h,
           child: PageView.builder(
             controller: _pageCtrl,
-            itemCount: _bannerData.length,
+            itemCount: _bannerCount,
             onPageChanged: (i) => setState(() => _bannerIdx = i),
             itemBuilder: (_, i) {
-              final b = _bannerData[i];
               return GestureDetector(
-                onTap: i == 0 ? _openSearch : _goAkun,
+                onTap: _openSearch,
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16),
-                  padding: const EdgeInsets.all(16),
+                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                        colors: b.grad,
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight),
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(16),
+                    color: const Color(0xFFE5E7EB),
                   ),
-                  child: Row(
-                    children: [
-                      Text(b.emoji, style: const TextStyle(fontSize: 36)),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(b.title,
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 14)),
-                            const SizedBox(height: 4),
-                            Text(b.subtitle,
-                                style: const TextStyle(
-                                    color: Colors.white70, fontSize: 12)),
-                            const SizedBox(height: 10),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(b.action,
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: b.grad.first)),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: SekitaImage(bannerPath(i + 1), fit: BoxFit.cover),
                 ),
               );
             },
@@ -248,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
-            _bannerData.length,
+            _bannerCount,
             (i) => AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               margin: const EdgeInsets.symmetric(horizontal: 3),
@@ -265,10 +208,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Kategori horizontal scroll (1 baris) ───────────────────────────────
+  // ── Kategori horizontal scroll dengan icon asli ──────────────────────────
   Widget _categories() {
     return SizedBox(
-      height: 88,
+      height: 94,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -281,18 +224,17 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEFF4FF),
-                    borderRadius: BorderRadius.circular(16),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: SizedBox(
+                    width: 58,
+                    height: 58,
+                    child: SekitaImage(catIconPath(c), fit: BoxFit.cover),
                   ),
-                  child: Icon(iconForKategori(c), color: kBrand, size: 26),
                 ),
                 const SizedBox(height: 6),
                 SizedBox(
-                  width: 56,
+                  width: 60,
                   child: Text(c,
                       textAlign: TextAlign.center,
                       maxLines: 2,
@@ -306,7 +248,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Guest banner CTA ─────────────────────────────────────────────────
   Widget _guestBanner() {
     return GestureDetector(
       onTap: _goAkun,
@@ -347,7 +288,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Kebutuhan Saya ───────────────────────────────────────────────────
   Widget _myKebutuhanSection() {
     return FutureBuilder<List<Kebutuhan>>(
       future: _myFuture,
@@ -447,7 +387,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Section title ───────────────────────────────────────────────────
   Widget _sectionTitle(String t) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 8),
@@ -457,7 +396,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ── Error view ──────────────────────────────────────────────────────────
 class _ErrorView extends StatelessWidget {
   final Future<void> Function() onRetry;
   const _ErrorView({required this.onRetry});
