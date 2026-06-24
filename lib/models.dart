@@ -131,3 +131,33 @@ class Kebutuhan {
     );
   }
 }
+
+class Pembeli {
+  final int id;
+  final String nama;
+  final String wa;
+  final String email;
+  final String avatar;
+  final int verified;
+
+  Pembeli({
+    required this.id,
+    required this.nama,
+    required this.wa,
+    required this.email,
+    required this.avatar,
+    required this.verified,
+  });
+
+  factory Pembeli.fromJson(Map<String, dynamic> j) {
+    int toI(dynamic v) => v == null ? 0 : (v is num ? v.toInt() : int.tryParse('$v') ?? 0);
+    return Pembeli(
+      id: toI(j['id']),
+      nama: '${j['nama'] ?? ''}',
+      wa: '${j['wa'] ?? ''}',
+      email: j['email'] == null ? '' : '${j['email']}',
+      avatar: '${j['avatar'] ?? ''}',
+      verified: toI(j['verified']),
+    );
+  }
+}

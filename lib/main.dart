@@ -5,6 +5,7 @@ import 'home.dart';
 import 'search.dart';
 import 'kebutuhan.dart';
 import 'post.dart';
+import 'akun.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,6 +43,7 @@ class _RootNavState extends State<RootNav> {
       const SearchScreen(),
       const KebutuhanScreen(),
       const PostKebutuhanScreen(),
+      const AkunScreen(),
     ];
     return Scaffold(
       body: IndexedStack(index: _i, children: pages),
@@ -53,6 +55,7 @@ class _RootNavState extends State<RootNav> {
           NavigationDestination(icon: Icon(Icons.search), label: 'Cari'),
           NavigationDestination(icon: Icon(Icons.assignment_outlined), selectedIcon: Icon(Icons.assignment), label: 'Kebutuhan'),
           NavigationDestination(icon: Icon(Icons.add_circle_outline), selectedIcon: Icon(Icons.add_circle), label: 'Posting'),
+          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Akun'),
         ],
       ),
     );
