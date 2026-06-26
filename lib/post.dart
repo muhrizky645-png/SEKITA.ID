@@ -66,7 +66,8 @@ class _ThousandsFormatter extends TextInputFormatter {
 }
 
 class PostKebutuhanScreen extends StatefulWidget {
-  const PostKebutuhanScreen({super.key});
+  final void Function(int tab)? onGoTab;
+  const PostKebutuhanScreen({super.key, this.onGoTab});
   @override
   State<PostKebutuhanScreen> createState() => _PostKebutuhanScreenState();
 }
@@ -91,10 +92,17 @@ class _PostKebutuhanScreenState extends State<PostKebutuhanScreen> {
   @override
   void initState() {
     super.initState();
-    final u = Api.currentUser;
-    if (u != null && u.wa.isNotEmpty) {
-      _wa.text = u.wa;
-      _waLocked = true;
+    _ensureSession();
+  }
+
+  // Saat app start, layar ini dibangun sekali (di IndexedStack) padahal me()
+  // belum dipanggil. Pastikan sesi termuat supaya WA bisa terkunci dari akun.
+  Future<void> _ensureSession() async {
+    if (Api.currentUser == null) {
+      try {
+        await Api.me();
+      } catch (_) {}
+      if (mounted) setState(() {});
     }
   }
 
@@ -217,7 +225,11 @@ class _PostKebutuhanScreenState extends State<PostKebutuhanScreen> {
                   Expanded(
                     child: FilledButton(
                       style: FilledButton.styleFrom(backgroundColor: _kOrange),
-                      onPressed: () => Navigator.pop(ctx),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _resetForm();
+                        widget.onGoTab?.call(0);
+                      },
                       child: const Text('Selesai'),
                     ),
                   ),
@@ -232,6 +244,14 @@ class _PostKebutuhanScreenState extends State<PostKebutuhanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Sinkronkan status kunci WA tiap build supaya tetap akurat walau user baru
+    // login setelah layar ini dibangun (IndexedStack mempertahankan state).
+    final u = Api.currentUser;
+    final uw = (u != null) ? u.wa.trim() : '';
+    _waLocked = uw.isNotEmpty;
+    if (_waLocked && _wa.text != uw) {
+      _wa.text = uw;
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('Posting Kebutuhan')),
       body: SafeArea(
