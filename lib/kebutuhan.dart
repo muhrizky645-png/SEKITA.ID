@@ -17,6 +17,24 @@ String timeAgo(int ms) {
   return '${(d.inDays / 365).floor()} thn lalu';
 }
 
+/// Buka detail sebuah kebutuhan dari layar mana pun (mis. Beranda).
+void openKebutuhanDetail(
+  BuildContext context,
+  Kebutuhan k, {
+  bool mine = false,
+  VoidCallback? onChanged,
+}) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) => _DetailSheet(k: k, mine: mine, onChanged: onChanged ?? () {}),
+  );
+}
+
 class KebutuhanScreen extends StatefulWidget {
   const KebutuhanScreen({super.key});
   @override
@@ -118,15 +136,7 @@ class _KebutuhanScreenState extends State<KebutuhanScreen> {
   }
 
   void _openDetail(Kebutuhan k) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => _DetailSheet(k: k, mine: _isMine(k), onChanged: _load),
-    );
+    openKebutuhanDetail(context, k, mine: _isMine(k), onChanged: _load);
   }
 
   Widget _statusChip(String t, Color bg, Color fg) {
@@ -183,7 +193,7 @@ class _KebutuhanScreenState extends State<KebutuhanScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${k.cat.isEmpty ? 'Umum' : k.cat} · ${k.loc.isEmpty ? '-' : k.loc}',
+                      '${k.cat.isEmpty ? 'Umum' : k.cat} \u00b7 ${k.loc.isEmpty ? '-' : k.loc}',
                       style: TextStyle(color: Colors.grey[700], fontSize: 12),
                     ),
                     if (k.budget.isNotEmpty) ...[
@@ -203,7 +213,7 @@ class _KebutuhanScreenState extends State<KebutuhanScreen> {
                               style: TextStyle(fontSize: 12, color: Colors.grey[600])),
                         ),
                         const SizedBox(width: 8),
-                        Text('· ${timeAgo(k.ts)}', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                        Text('\u00b7 ${timeAgo(k.ts)}', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
                       ],
                     ),
                     if (k.contactedCount > 0) ...[
@@ -401,7 +411,7 @@ class _DetailSheetState extends State<_DetailSheet> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_done ? '✅' : '🤝', style: const TextStyle(fontSize: 18)),
+                      Text(_done ? '\u2705' : '\ud83e\udd1d', style: const TextStyle(fontSize: 18)),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -624,7 +634,7 @@ class _EditSheetState extends State<_EditSheet> {
                 TextField(controller: _wa, keyboardType: TextInputType.phone, decoration: _dec('08xxxxxxxxxx')),
                 const SizedBox(height: 12),
                 _label('Deskripsi (opsional)'),
-                TextField(controller: _deskripsi, maxLines: 4, decoration: _dec('Jelaskan detail kebutuhanmu…')),
+                TextField(controller: _deskripsi, maxLines: 4, decoration: _dec('Jelaskan detail kebutuhanmu\u2026')),
                 const SizedBox(height: 18),
                 SizedBox(
                   width: double.infinity,
@@ -807,7 +817,7 @@ class _ReviewFlowSheetState extends State<_ReviewFlowSheet> {
           onTap: _ensureMitra,
           onChanged: _onSearch,
           decoration: InputDecoration(
-            hintText: 'Ketik nama mitra / usaha…',
+            hintText: 'Ketik nama mitra / usaha\u2026',
             prefixIcon: const Icon(Icons.search),
             isDense: true,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -844,7 +854,7 @@ class _ReviewFlowSheetState extends State<_ReviewFlowSheet> {
       color: const Color(0xFFF8FAFC),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
-        leading: const CircleAvatar(backgroundColor: Color(0xFFEFF4FF), child: Text('🧰')),
+        leading: const CircleAvatar(backgroundColor: Color(0xFFEFF4FF), child: Text('\ud83e\uddf0')),
         title: Text(nama, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => _pick(id, nama),
@@ -889,7 +899,7 @@ class _ReviewFlowSheetState extends State<_ReviewFlowSheet> {
           controller: _komentar,
           maxLines: 4,
           decoration: InputDecoration(
-            hintText: 'Tulis pengalamanmu dengan mitra ini…',
+            hintText: 'Tulis pengalamanmu dengan mitra ini\u2026',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
