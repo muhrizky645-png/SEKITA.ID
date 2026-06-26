@@ -101,13 +101,13 @@ class Api {
     }
   }
 
-  static Future<String?> fetchCover(int mitraId) async {
+  static Future<String> fetchCover(int mitraId) async {
     try {
       final r = await Net.get('$base/mitra-cover.php?id=$mitraId');
       final j = jsonDecode(r.body);
       if (j is Map && j['cover'] != null) return '${j['cover']}';
     } catch (_) {}
-    return null;
+    return '';
   }
 
   static Future<List<Ulasan>> fetchUlasan(int mitraId) async {
