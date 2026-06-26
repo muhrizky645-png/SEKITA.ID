@@ -105,8 +105,10 @@ class Kebutuhan {
   final String loc;
   final String cat;
   final String ic;
+  final String bg;
   final String budget;
   final String deskripsi;
+  final String waktu;
   final String status;
   final int ts;
   final String pembeliNama;
@@ -121,8 +123,10 @@ class Kebutuhan {
     required this.loc,
     required this.cat,
     required this.ic,
+    required this.bg,
     required this.budget,
     required this.deskripsi,
+    required this.waktu,
     required this.status,
     required this.ts,
     required this.pembeliNama,
@@ -149,8 +153,10 @@ class Kebutuhan {
       loc: '${j['loc'] ?? ''}',
       cat: '${j['cat'] ?? ''}',
       ic: '${j['ic'] ?? '\ud83d\udcdd'}',
+      bg: '${j['bg'] ?? ''}',
       budget: '${j['budget'] ?? ''}',
       deskripsi: '${j['deskripsi'] ?? ''}',
+      waktu: '${j['waktu'] ?? ''}',
       status: '${j['status'] ?? 'open'}',
       ts: toI(j['ts']),
       pembeliNama: nama,
