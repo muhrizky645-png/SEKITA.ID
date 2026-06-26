@@ -287,6 +287,24 @@ class _DetailSheetState extends State<_DetailSheet> {
     }
   }
 
+  Future<void> _openEdit() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final changed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _EditSheet(k: widget.k),
+    );
+    if (changed == true && mounted) {
+      widget.onChanged();
+      Navigator.pop(context);
+      messenger.showSnackBar(const SnackBar(content: Text('Postingan diperbarui.')));
+    }
+  }
+
   Future<void> _delete() async {
     final yes = await showDialog<bool>(
       context: context,
@@ -444,6 +462,15 @@ class _DetailSheetState extends State<_DetailSheet> {
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _busy ? null : _openEdit,
+                      icon: const Icon(Icons.edit_outlined),
+                      label: const Text('Edit postingan'),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
                     child: TextButton.icon(
                       onPressed: _busy ? null : _delete,
                       style: TextButton.styleFrom(
@@ -474,6 +501,162 @@ class _DetailSheetState extends State<_DetailSheet> {
             Expanded(child: Text(t, style: const TextStyle(fontSize: 14))),
           ],
         ),
+      );
+}
+
+class _EditSheet extends StatefulWidget {
+  final Kebutuhan k;
+  const _EditSheet({required this.k});
+
+  @override
+  State<_EditSheet> createState() => _EditSheetState();
+}
+
+class _EditSheetState extends State<_EditSheet> {
+  late final TextEditingController _title;
+  late final TextEditingController _lokasi;
+  late final TextEditingController _budget;
+  late final TextEditingController _wa;
+  late final TextEditingController _deskripsi;
+  late String _kategori;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final k = widget.k;
+    _title = TextEditingController(text: k.title);
+    _lokasi = TextEditingController(text: k.loc);
+    _budget = TextEditingController(text: k.budget);
+    _wa = TextEditingController(text: k.wa);
+    _deskripsi = TextEditingController(text: k.deskripsi);
+    _kategori = k.cat.isEmpty ? Api.kategoriDasar.first : k.cat;
+  }
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _lokasi.dispose();
+    _budget.dispose();
+    _wa.dispose();
+    _deskripsi.dispose();
+    super.dispose();
+  }
+
+  void _snack(String m) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  }
+
+  Future<void> _save() async {
+    final title = _title.text.trim();
+    final lokasi = _lokasi.text.trim();
+    if (title.isEmpty || lokasi.isEmpty) {
+      _snack('Judul dan lokasi wajib diisi.');
+      return;
+    }
+    setState(() => _busy = true);
+    final r = await Api.editKebutuhan(
+      id: widget.k.id,
+      title: title,
+      kategori: _kategori,
+      lokasi: lokasi,
+      deskripsi: _deskripsi.text.trim(),
+      budget: _budget.text.trim(),
+      wa: _wa.text.trim(),
+      ic: widget.k.ic,
+      bg: widget.k.bg,
+      waktu: widget.k.waktu,
+    );
+    if (!mounted) return;
+    if (r.ok) {
+      Navigator.pop(context, true);
+    } else {
+      setState(() => _busy = false);
+      _snack(r.error);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cats = Api.kategoriDasar.contains(_kategori)
+        ? Api.kategoriDasar
+        : <String>[_kategori, ...Api.kategoriDasar];
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(left: 20, right: 20, top: 12, bottom: MediaQuery.of(context).viewInsets.bottom + 16),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(color: const Color(0xFFE5E7EB), borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+                const Text('Edit postingan', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+                const SizedBox(height: 14),
+                _label('Judul kebutuhan'),
+                TextField(controller: _title, decoration: _dec('Mis. Butuh tukang servis AC')),
+                const SizedBox(height: 12),
+                _label('Kategori'),
+                DropdownButtonFormField<String>(
+                  initialValue: _kategori,
+                  isExpanded: true,
+                  decoration: _dec('Pilih kategori'),
+                  items: cats.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                  onChanged: _busy ? null : (v) => setState(() => _kategori = v ?? _kategori),
+                ),
+                const SizedBox(height: 12),
+                _label('Lokasi'),
+                TextField(controller: _lokasi, decoration: _dec('Mis. Sleman, Yogyakarta')),
+                const SizedBox(height: 12),
+                _label('Perkiraan budget (opsional)'),
+                TextField(controller: _budget, decoration: _dec('Mis. Rp100.000 (nego)')),
+                const SizedBox(height: 12),
+                _label('Nomor WhatsApp'),
+                TextField(controller: _wa, keyboardType: TextInputType.phone, decoration: _dec('08xxxxxxxxxx')),
+                const SizedBox(height: 12),
+                _label('Deskripsi (opsional)'),
+                TextField(controller: _deskripsi, maxLines: 4, decoration: _dec('Jelaskan detail kebutuhanmu…')),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _busy ? null : _save,
+                    child: _busy
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Text('Simpan perubahan'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(onPressed: _busy ? null : () => Navigator.pop(context, false), child: const Text('Batal')),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _label(String t) => Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(t, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+      );
+
+  InputDecoration _dec(String hint) => InputDecoration(
+        hintText: hint,
+        isDense: true,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       );
 }
 
