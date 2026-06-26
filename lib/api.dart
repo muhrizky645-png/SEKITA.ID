@@ -203,7 +203,7 @@ class Api {
     }
   }
 
-  // ---------- KEBUTUHAN: status / hapus / ulasan ----------
+  // ---------- KEBUTUHAN: status / hapus / edit / ulasan ----------
 
   static Future<({bool ok, String error})> setKebutuhanStatus(String kebutuhanId, bool selesai) async {
     try {
@@ -229,6 +229,40 @@ class Api {
       final j = jsonDecode(r.body);
       if (j is Map && j['ok'] == true) return (ok: true, error: '');
       return (ok: false, error: (j is Map && j['error'] != null) ? '${j['error']}' : 'Gagal menghapus postingan.');
+    } catch (_) {
+      return (ok: false, error: 'Tidak dapat terhubung ke server.');
+    }
+  }
+
+  static Future<({bool ok, String error})> editKebutuhan({
+    required String id,
+    required String title,
+    required String kategori,
+    required String lokasi,
+    String deskripsi = '',
+    String budget = '',
+    String wa = '',
+    String ic = '',
+    String bg = '',
+    String waktu = '',
+  }) async {
+    try {
+      final r = await Net.postJson('$base/kebutuhan-edit.php', {
+        'id': int.tryParse(id) ?? 0,
+        'device_id': deviceId,
+        'title': title,
+        'kategori': kategori,
+        'lokasi': lokasi,
+        'deskripsi': deskripsi,
+        'budget': budget,
+        'wa': wa,
+        'ic': ic,
+        'bg': bg,
+        'waktu': waktu,
+      });
+      final j = jsonDecode(r.body);
+      if (j is Map && j['ok'] == true) return (ok: true, error: '');
+      return (ok: false, error: (j is Map && j['error'] != null) ? '${j['error']}' : 'Gagal menyimpan perubahan.');
     } catch (_) {
       return (ok: false, error: 'Tidak dapat terhubung ke server.');
     }
