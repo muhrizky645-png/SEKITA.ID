@@ -178,6 +178,9 @@ class Api {
     String budget = '',
     String wa = '',
     String pembeliNama = '',
+    String waktu = '',
+    String ic = '',
+    String bg = '',
   }) async {
     try {
       final r = await Net.postJson('$base/kebutuhan-tambah.php', {
@@ -188,6 +191,9 @@ class Api {
         'budget': budget,
         'wa': wa,
         'pembeli_nama': pembeliNama,
+        'waktu': waktu,
+        'ic': ic,
+        'bg': bg,
         'device_id': deviceId,
       });
       final j = jsonDecode(r.body);
