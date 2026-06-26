@@ -10,7 +10,8 @@ import 'kebutuhan.dart';
 import 'akun.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final int activeTab;
+  const HomeScreen({super.key, this.activeTab = 0});
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -18,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late Future<List<Mitra>> _mitraFuture;
   Future<List<Kebutuhan>>? _myFuture;
+  int? _shownUid;
   late final PageController _pageCtrl;
   Timer? _autoTimer;
   int _bannerIdx = 0;
@@ -28,9 +30,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _mitraFuture = Api.fetchMitra();
-    if (Api.currentUser != null) {
-      _myFuture = Api.fetchKebutuhanMine();
-    }
+    _loadMine();
+    _ensureSession();
     _pageCtrl = PageController(initialPage: _bannerCount * 1000);
     _autoTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (_pageCtrl.hasClients) {
@@ -40,6 +41,34 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     });
+  }
+
+  void _loadMine() {
+    final u = Api.currentUser;
+    _shownUid = u?.id;
+    _myFuture = u != null ? Api.fetchKebutuhanMine() : null;
+  }
+
+  // Saat app start, layar ini dibangun sekali (IndexedStack) padahal me() belum
+  // dipanggil. Muat sesi supaya "Kebutuhanmu Terbaru" langsung tampil tanpa
+  // harus refresh manual dulu.
+  Future<void> _ensureSession() async {
+    if (Api.currentUser != null) return;
+    try {
+      await Api.me();
+    } catch (_) {}
+    if (!mounted) return;
+    if (Api.currentUser != null) setState(_loadMine);
+  }
+
+  @override
+  void didUpdateWidget(covariant HomeScreen old) {
+    super.didUpdateWidget(old);
+    // Segarkan daftar kebutuhanku tiap kali Beranda kembali jadi tab aktif,
+    // sekaligus menangkap perubahan status login (real-time).
+    if (widget.activeTab == 0 && old.activeTab != 0) {
+      setState(_loadMine);
+    }
   }
 
   @override
@@ -52,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _reload() async {
     setState(() {
       _mitraFuture = Api.fetchMitra();
-      _myFuture = Api.currentUser != null ? Api.fetchKebutuhanMine() : null;
+      _loadMine();
     });
     await _mitraFuture;
   }
@@ -78,6 +107,15 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final user = Api.currentUser;
+    // Kalau status login berubah (mis. baru login lewat Akun) tapi daftar belum
+    // dimuat ulang, jadwalkan reload pada frame berikutnya.
+    if (user?.id != _shownUid) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && Api.currentUser?.id != _shownUid) {
+          setState(_loadMine);
+        }
+      });
+    }
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -103,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 14),
                   _categories(),
                   if (user == null) _guestBanner(),
-                  if (user != null && _myFuture != null) _myKebutuhanSection(),
+                  if (user != null) _myKebutuhanSection(),
                   _sectionTitle('Mitra'),
                   if (shown.isEmpty)
                     const Padding(
@@ -192,7 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Banner auto-scroll (3 detik, infinite ke kiri) ──────────────────────
+  // \u2500\u2500 Banner auto-scroll (3 detik, infinite ke kiri) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   Widget _banners(BuildContext context) {
     final w = MediaQuery.of(context).size.width - 32;
     final h = w / 4;
@@ -241,7 +279,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Kategori: icon dibungkus kotak (seperti card mitra) ──────────────────
+  // \u2500\u2500 Kategori: icon dibungkus kotak (seperti card mitra) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   Widget _categories() {
     return SizedBox(
       height: 90,
@@ -324,21 +362,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Kebutuhanmu Terbaru (mode pembeli) ─────────────────────
+  // \u2500\u2500 Kebutuhanmu Terbaru (mode pembeli) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   Widget _myKebutuhanSection() {
     return FutureBuilder<List<Kebutuhan>>(
       future: _myFuture,
       builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(
-                child: SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2))),
-          );
-        }
+        final loading = _myFuture != null &&
+            snap.connectionState == ConnectionState.waiting;
         final list = snap.data ?? [];
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -363,7 +393,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-            if (list.isEmpty)
+            if (loading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 28),
+                child: Center(
+                    child: SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2))),
+              )
+            else if (list.isEmpty)
               _emptyKebutuhanBox()
             else
               ...list.take(3).map((k) => _miniCard(k)),
@@ -408,55 +447,60 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _miniCard(Kebutuhan k) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
-      child: Row(
-        children: [
-          Text(k.ic.isEmpty ? '\ud83d\udcdd' : k.ic,
-              style: const TextStyle(fontSize: 20)),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(k.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 14)),
-                Text(k.cat.isEmpty ? 'Umum' : k.cat,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: k.isDone
-                  ? const Color(0xFFDCFCE7)
-                  : const Color(0xFFEFF4FF),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              k.isDone ? 'Selesai' : 'Terbuka',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: k.isDone
-                    ? const Color(0xFF166534)
-                    : kBrand,
+    return GestureDetector(
+      onTap: () => openKebutuhanDetail(context, k, mine: true, onChanged: _reload),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        child: Row(
+          children: [
+            Text(k.ic.isEmpty ? '\ud83d\udcdd' : k.ic,
+                style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(k.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 14)),
+                  Text(k.cat.isEmpty ? 'Umum' : k.cat,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                ],
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: k.isDone
+                    ? const Color(0xFFDCFCE7)
+                    : const Color(0xFFEFF4FF),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                k.isDone ? 'Selesai' : 'Terbuka',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: k.isDone
+                      ? const Color(0xFF166534)
+                      : kBrand,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(Icons.chevron_right, size: 18, color: Colors.grey[400]),
+          ],
+        ),
       ),
     );
   }
