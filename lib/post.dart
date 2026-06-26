@@ -135,7 +135,67 @@ class _PostKebutuhanScreenState extends State<PostKebutuhanScreen> {
     return 'Nego';
   }
 
+  // Pembeli yang sudah login tapi belum terverifikasi tidak bisa posting
+  // (mirror gate di web). Tampilkan popup ramah yang mengarahkan ke tab Akun.
+  bool _needVerif() {
+    final u = Api.currentUser;
+    return u != null && u.verified != 1;
+  }
+
+  void _showVerifGate() {
+    showDialog(
+      context: context,
+      builder: (c) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        titlePadding: const EdgeInsets.fromLTRB(22, 22, 22, 0),
+        contentPadding: const EdgeInsets.fromLTRB(22, 12, 22, 0),
+        title: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFEDD5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              alignment: Alignment.center,
+              child: const Text('\ud83d\udd12', style: TextStyle(fontSize: 20)),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text('Verifikasi akun dulu, yuk',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Akun pembelimu belum terverifikasi. Verifikasi email & nomor WhatsApp dulu di halaman Akun supaya kamu bisa posting kebutuhan dan dapat badge \u2714 Terverifikasi. Tenang, prosesnya cepat kok \ud83d\ude4c',
+          style: TextStyle(fontSize: 14, height: 1.55, color: Color(0xFF475569)),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c),
+            child: const Text('Nanti saja'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: _kOrange),
+            onPressed: () {
+              Navigator.pop(c);
+              widget.onGoTab?.call(4);
+            },
+            child: const Text('Ke Halaman Verifikasi'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _submit() async {
+    if (_needVerif()) {
+      _showVerifGate();
+      return;
+    }
     final waDigits = _wa.text.replaceAll(RegExp(r'[^0-9]'), '');
     setState(() {
       _eCat = _selectedCat == null;
@@ -354,7 +414,7 @@ class _PostKebutuhanScreenState extends State<PostKebutuhanScreen> {
             if (_waLocked)
               const Padding(
                 padding: EdgeInsets.only(top: 7),
-                child: Text('\u{1F512} Nomor terkunci dari akunmu yang sudah terverifikasi.',
+                child: Text('\ud83d\udd12 Nomor terkunci dari akunmu yang sudah terverifikasi.',
                     style: TextStyle(fontSize: 12.5, color: Color(0xFF047857), fontWeight: FontWeight.w600)),
               )
             else
@@ -498,7 +558,7 @@ class _PostKebutuhanScreenState extends State<PostKebutuhanScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('\u{1F512}', style: TextStyle(fontSize: 15)),
+          const Text('\ud83d\udd12', style: TextStyle(fontSize: 15)),
           const SizedBox(width: 10),
           Expanded(
             child: Text(text, style: const TextStyle(fontSize: 13, color: Color(0xFF1E40AF), height: 1.4)),
