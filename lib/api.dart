@@ -369,3 +369,60 @@ class Api {
         currentUser = null;
         return (ok: true, error: '');
       }
+      return (ok: false, error: (j is Map && j['error'] != null) ? '${j['error']}' : 'Gagal menghapus akun.');
+    } catch (_) {
+      return (ok: false, error: 'Tidak dapat terhubung ke server.');
+    }
+  }
+
+  // ---------- VERIFIKASI PEMBELI ----------
+
+  static Future<Map<String, dynamic>> verifStatus() async {
+    final id = currentUser?.id ?? 0;
+    if (id <= 0) return {'ok': false, 'error': 'Belum login.'};
+    try {
+      final r = await Net.get('$base/verif-pembeli-status.php?id=$id');
+      final j = jsonDecode(r.body);
+      if (j is Map) return Map<String, dynamic>.from(j);
+    } catch (_) {}
+    return {'ok': false, 'error': 'Tidak dapat terhubung ke server.'};
+  }
+
+  static Future<Map<String, dynamic>> verifEmailSend() async {
+    final id = currentUser?.id ?? 0;
+    try {
+      final r = await Net.postJson('$base/verif-pembeli-email-otp.php?action=send', {'id': id});
+      final j = jsonDecode(r.body);
+      if (j is Map) return Map<String, dynamic>.from(j);
+    } catch (_) {}
+    return {'ok': false, 'error': 'Tidak dapat terhubung ke server.'};
+  }
+
+  static Future<Map<String, dynamic>> verifEmailVerify(String code) async {
+    final id = currentUser?.id ?? 0;
+    try {
+      final r = await Net.postJson('$base/verif-pembeli-email-otp.php?action=verify', {'id': id, 'code': code});
+      final j = jsonDecode(r.body);
+      if (j is Map) return Map<String, dynamic>.from(j);
+    } catch (_) {}
+    return {'ok': false, 'error': 'Tidak dapat terhubung ke server.'};
+  }
+
+  static Future<Map<String, dynamic>> verifWaAjukan() async {
+    final id = currentUser?.id ?? 0;
+    try {
+      final r = await Net.postJson('$base/verif-pembeli-wa-ajukan.php', {'id': id});
+      final j = jsonDecode(r.body);
+      if (j is Map) return Map<String, dynamic>.from(j);
+    } catch (_) {}
+    return {'ok': false, 'error': 'Tidak dapat terhubung ke server.'};
+  }
+
+  static Future<void> logout() async {
+    try {
+      await Net.postJson('$base/sesi.php?action=logout', {});
+    } catch (_) {}
+    await Net.clear();
+    currentUser = null;
+  }
+}
