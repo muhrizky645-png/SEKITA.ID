@@ -3,185 +3,199 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models.dart';
 
-/// Lapisan jaringan + state user untuk Sekita.
+/// Klien HTTP sadar-sesi: menyimpan & mengirim ulang cookie login (PHPSESSID)
+/// karena app native tidak menyimpan cookie secara otomatis seperti browser.
 class Net {
-  static String? _cookie;
+  static String _cookie = '';
+  static bool _loaded = false;
 
-  static Future<void> _load() async {
-    if (_cookie != null) return;
-    final sp = await SharedPreferences.getInstance();
-    _cookie = sp.getString('session_cookie') ?? '';
+  static Future<void> _ensure() async {
+    if (_loaded) return;
+    try {
+      final p = await SharedPreferences.getInstance();
+      _cookie = p.getString('session_cookie') ?? '';
+    } catch (_) {
+      _cookie = '';
+    }
+    _loaded = true;
   }
 
-  static Future<void> _save(http.Response r) async {
+  static Future<void> _capture(http.Response r) async {
     final raw = r.headers['set-cookie'];
     if (raw == null || raw.isEmpty) return;
-    final m = RegExp(r'PHPSESSID=[^;]+').firstMatch(raw);
-    if (m != null) {
-      _cookie = m.group(0);
-      final sp = await SharedPreferences.getInstance();
-      await sp.setString('session_cookie', _cookie ?? '');
-    }
+    final first = raw.split(';').first.trim();
+    if (first.isEmpty || !first.contains('=')) return;
+    _cookie = first;
+    try {
+      final p = await SharedPreferences.getInstance();
+      await p.setString('session_cookie', first);
+    } catch (_) {}
   }
 
-  static Future<Map<String, String>> _headers({bool json = false}) async {
-    await _load();
-    return {
-      if (json) 'Content-Type': 'application/json',
-      if ((_cookie ?? '').isNotEmpty) 'Cookie': _cookie!,
-    };
+  static Map<String, String> _headers([Map<String, String>? extra]) {
+    final h = <String, String>{};
+    if (extra != null) h.addAll(extra);
+    if (_cookie.isNotEmpty) h['Cookie'] = _cookie;
+    return h;
   }
 
   static Future<http.Response> get(String url) async {
-    final r = await http.get(Uri.parse(url), headers: await _headers()).timeout(const Duration(seconds: 20));
-    await _save(r);
+    await _ensure();
+    final r = await http.get(Uri.parse(url), headers: _headers()).timeout(const Duration(seconds: 20));
+    await _capture(r);
     return r;
   }
 
-  static Future<http.Response> postJson(String url, Object body) async {
+  static Future<http.Response> postJson(String url, Map<String, dynamic> body) async {
+    await _ensure();
     final r = await http
-        .post(Uri.parse(url), headers: await _headers(json: true), body: jsonEncode(body))
+        .post(Uri.parse(url), headers: _headers({'Content-Type': 'application/json'}), body: jsonEncode(body))
         .timeout(const Duration(seconds: 20));
-    await _save(r);
+    await _capture(r);
     return r;
   }
 
   static Future<void> clear() async {
     _cookie = '';
-    final sp = await SharedPreferences.getInstance();
-    await sp.remove('session_cookie');
+    try {
+      final p = await SharedPreferences.getInstance();
+      await p.remove('session_cookie');
+    } catch (_) {}
   }
 }
 
 class Api {
   static const String base = 'https://' 'sekita.id/api';
-  static Pembeli? currentUser;
-  static String deviceId = '';
 
-  /// Kategori dasar (selaras dgn web). Dipakai grid kategori di Beranda.
   static const List<String> kategoriDasar = [
-    'Terapis',
-    'Tukang',
-    'Transportasi',
-    'Servis AC',
-    'Kebersihan',
-    'Les Privat',
-    'Fotografer',
-    'MUA',
-    'Lainnya',
+    'Terapis', 'Tukang', 'Transportasi', 'Servis AC', 'Kebersihan',
+    'Les Privat', 'Fotografer', 'MUA', 'Lainnya',
   ];
 
+  static String _deviceId = '';
+  static String get deviceId => _deviceId;
+
+  /// Pembeli yang sedang login (null bila tamu).
+  static Pembeli? currentUser;
+
   static Future<void> initDeviceId() async {
-    final sp = await SharedPreferences.getInstance();
-    var id = sp.getString('device_id');
-    if (id == null || id.isEmpty) {
-      id = 'dev_${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}';
-      await sp.setString('device_id', id);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      var id = prefs.getString('device_id');
+      if (id == null || id.isEmpty) {
+        id = 'app_${DateTime.now().microsecondsSinceEpoch}';
+        await prefs.setString('device_id', id);
+      }
+      _deviceId = id;
+    } catch (_) {
+      _deviceId = 'app_${DateTime.now().microsecondsSinceEpoch}';
     }
-    deviceId = id;
   }
 
   static Future<List<Mitra>> fetchMitra() async {
-    try {
-      final r = await Net.get('$base/mitra-list.php');
-      final j = jsonDecode(r.body);
-      final list = (j is Map ? j['data'] : j) as List? ?? [];
-      return list.map((e) => Mitra.fromJson(e as Map<String, dynamic>)).toList();
-    } catch (_) {
-      return [];
+    final r = await http.get(Uri.parse('$base/mitra-list.php')).timeout(const Duration(seconds: 20));
+    final j = jsonDecode(r.body);
+    if (j is Map && j['ok'] == true && j['mitra'] is List) {
+      return (j['mitra'] as List).map((e) => Mitra.fromJson(e as Map<String, dynamic>)).toList();
     }
+    throw Exception('Gagal memuat data mitra');
   }
 
   static Future<List<String>> fetchKategoriExtra() async {
     try {
-      final r = await Net.get('$base/kategori-list.php');
+      final r = await http.get(Uri.parse('$base/kategori-list.php'));
       final j = jsonDecode(r.body);
-      final list = (j is Map ? j['data'] : j) as List? ?? [];
-      return list.map((e) => '$e').toList();
-    } catch (_) {
-      return [];
-    }
+      if (j is Map && j['kategori'] is List) {
+        return (j['kategori'] as List).map((e) => '$e').toList();
+      }
+    } catch (_) {}
+    return [];
   }
 
-  static Future<List<String>> fetchPortfolio(String mitraId) async {
+  static Future<List<String>> fetchPortfolio(String id) async {
     try {
-      final r = await Net.get('$base/mitra-portfolio.php?id=$mitraId');
+      final r = await http.get(Uri.parse('$base/mitra-portfolio.php?id=$id'));
       final j = jsonDecode(r.body);
-      final list = (j is Map ? j['data'] : j) as List? ?? [];
-      return list.map((e) => '$e').toList();
-    } catch (_) {
-      return [];
-    }
+      if (j is Map && j['portfolio'] is List) {
+        return (j['portfolio'] as List).map((e) => '$e').toList();
+      }
+    } catch (_) {}
+    return [];
   }
 
-  static Future<String> fetchCover(String mitraId) async {
+  /// Foto sampul (cover) mitra untuk header halaman detail.
+  static Future<String> fetchCover(String id) async {
+    if (id.isEmpty) return '';
     try {
-      final r = await Net.get('$base/mitra-cover.php?id=$mitraId');
+      final r = await http.get(Uri.parse('$base/mitra-cover.php?id=$id'));
       final j = jsonDecode(r.body);
-      if (j is Map && j['cover'] != null) return '${j['cover']}';
+      if (j is Map && j['ok'] == true && j['cover'] != null) {
+        return '${j['cover']}';
+      }
     } catch (_) {}
     return '';
   }
 
   static Future<List<Ulasan>> fetchUlasan(String mitraId) async {
     try {
-      final r = await Net.get('$base/ulasan-list.php?mitra_id=$mitraId');
+      final r = await http.get(Uri.parse('$base/ulasan-list.php'));
       final j = jsonDecode(r.body);
-      final list = (j is Map ? j['data'] : j) as List? ?? [];
-      return list.map((e) => Ulasan.fromJson(e as Map<String, dynamic>)).toList();
-    } catch (_) {
-      return [];
-    }
+      if (j is Map && j['ulasan'] is List) {
+        return (j['ulasan'] as List)
+            .map((e) => Ulasan.fromJson(e as Map<String, dynamic>))
+            .where((u) => u.mitraId == mitraId)
+            .toList();
+      }
+    } catch (_) {}
+    return [];
   }
 
   static Future<List<Kebutuhan>> fetchKebutuhan() async {
-    try {
-      final r = await Net.get('$base/kebutuhan-list.php');
-      final j = jsonDecode(r.body);
-      final list = (j is Map ? j['data'] : j) as List? ?? [];
-      return list.map((e) => Kebutuhan.fromJson(e as Map<String, dynamic>)).toList();
-    } catch (_) {
-      return [];
+    final r = await http.get(Uri.parse('$base/kebutuhan-list.php')).timeout(const Duration(seconds: 20));
+    final j = jsonDecode(r.body);
+    if (j is Map && j['kebutuhan'] is List) {
+      return (j['kebutuhan'] as List).map((e) => Kebutuhan.fromJson(e as Map<String, dynamic>)).toList();
     }
+    throw Exception('Gagal memuat kebutuhan');
   }
 
   static Future<List<Kebutuhan>> fetchKebutuhanMine() async {
     try {
-      final r = await Net.get('$base/kebutuhan-mine.php?device_id=$deviceId');
+      final r = await http.get(Uri.parse('$base/kebutuhan-mine.php?device_id=$deviceId'));
       final j = jsonDecode(r.body);
-      final list = (j is Map ? j['data'] : j) as List? ?? [];
-      return list.map((e) => Kebutuhan.fromJson(e as Map<String, dynamic>)).toList();
-    } catch (_) {
-      return [];
-    }
+      if (j is Map && j['kebutuhan'] is List) {
+        return (j['kebutuhan'] as List).map((e) => Kebutuhan.fromJson(e as Map<String, dynamic>)).toList();
+      }
+    } catch (_) {}
+    return [];
   }
 
-  /// Posting kebutuhan baru. Mengembalikan true bila berhasil.
   static Future<bool> postKebutuhan({
     required String title,
     required String kategori,
     required String lokasi,
-    required String deskripsi,
-    required String budget,
-    required String wa,
+    String deskripsi = '',
+    String budget = '',
+    String wa = '',
+    String pembeliNama = '',
     String waktu = '',
     String ic = '',
     String bg = '',
   }) async {
     try {
-      final payload = <String, dynamic>{
+      final r = await Net.postJson('$base/kebutuhan-tambah.php', {
         'title': title,
         'kategori': kategori,
         'lokasi': lokasi,
         'deskripsi': deskripsi,
         'budget': budget,
         'wa': wa,
+        'pembeli_nama': pembeliNama,
         'waktu': waktu,
         'ic': ic,
         'bg': bg,
         'device_id': deviceId,
-      };
-      final r = await Net.postJson('$base/kebutuhan-tambah.php', payload);
+      });
       final j = jsonDecode(r.body);
       return j is Map && j['ok'] == true;
     } catch (_) {
@@ -189,44 +203,60 @@ class Api {
     }
   }
 
+  // ---------- AKUN ----------
+
+  /// Ambil user dari sesi server. Mengisi [currentUser] bila login sebagai pembeli.
   static Future<Pembeli?> me() async {
     try {
       final r = await Net.get('$base/sesi.php?action=me');
       final j = jsonDecode(r.body);
       if (j is Map && j['loggedIn'] == true && j['tipe'] == 'pembeli' && j['user'] != null) {
         currentUser = Pembeli.fromJson(j['user'] as Map<String, dynamic>);
-      } else {
-        currentUser = null;
+        return currentUser;
       }
-    } catch (_) {
-      currentUser = null;
-    }
-    return currentUser;
+    } catch (_) {}
+    currentUser = null;
+    return null;
   }
 
   static Future<({bool ok, String error})> login(String idf, String password) async {
     try {
-      final r = await Net.postJson('$base/sesi.php?action=login', {'identifier': idf, 'password': password, 'tipe': 'pembeli'});
+      final r = await Net.postJson('$base/sesi.php?action=login', {
+        'tipe': 'pembeli',
+        'id': idf,
+        'password': password,
+      });
       final j = jsonDecode(r.body);
-      if (j is Map && j['ok'] == true) {
-        await me();
+      if (j is Map && j['ok'] == true && j['loggedIn'] == true && j['user'] != null) {
+        currentUser = Pembeli.fromJson(j['user'] as Map<String, dynamic>);
         return (ok: true, error: '');
       }
-      return (ok: false, error: (j is Map && j['error'] != null) ? '${j['error']}' : 'Gagal masuk.');
+      return (ok: false, error: (j is Map && j['error'] != null) ? '${j['error']}' : 'Login gagal.');
     } catch (_) {
       return (ok: false, error: 'Tidak dapat terhubung ke server.');
     }
   }
 
-  static Future<({bool ok, String error})> register({required String nama, required String wa, required String password, String email = ''}) async {
+  static Future<({bool ok, String error})> register({
+    required String nama,
+    required String wa,
+    required String password,
+    String email = '',
+  }) async {
     try {
-      final r = await Net.postJson('$base/daftar.php', {'nama': nama, 'wa': wa, 'password': password, 'email': email, 'tipe': 'pembeli'});
+      final r = await Net.postJson('$base/daftar.php', {
+        'tipe': 'pembeli',
+        'nama': nama,
+        'wa': wa,
+        'password': password,
+        'email': email,
+      });
       final j = jsonDecode(r.body);
       if (j is Map && j['ok'] == true) {
-        await me();
-        return (ok: true, error: '');
+        // daftar.php tidak otomatis login -> login setelah daftar.
+        return await login(wa, password);
       }
-      return (ok: false, error: (j is Map && j['error'] != null) ? '${j['error']}' : 'Gagal mendaftar.');
+      return (ok: false, error: (j is Map && j['error'] != null) ? '${j['error']}' : 'Pendaftaran gagal.');
     } catch (_) {
       return (ok: false, error: 'Tidak dapat terhubung ke server.');
     }
@@ -331,7 +361,7 @@ class Api {
 
   static Future<void> logout() async {
     try {
-      await Net.get('$base/sesi.php?action=logout');
+      await Net.postJson('$base/sesi.php?action=logout', {});
     } catch (_) {}
     await Net.clear();
     currentUser = null;
