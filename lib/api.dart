@@ -58,6 +58,19 @@ class Api {
   static Pembeli? currentUser;
   static String deviceId = '';
 
+  /// Kategori dasar (selaras dgn web). Dipakai grid kategori di Beranda.
+  static const List<String> kategoriDasar = [
+    'Terapis',
+    'Tukang',
+    'Transportasi',
+    'Servis AC',
+    'Kebersihan',
+    'Les Privat',
+    'Fotografer',
+    'MUA',
+    'Lainnya',
+  ];
+
   static Future<void> initDeviceId() async {
     final sp = await SharedPreferences.getInstance();
     var id = sp.getString('device_id');
@@ -90,7 +103,7 @@ class Api {
     }
   }
 
-  static Future<List<String>> fetchPortfolio(int mitraId) async {
+  static Future<List<String>> fetchPortfolio(String mitraId) async {
     try {
       final r = await Net.get('$base/mitra-portfolio.php?id=$mitraId');
       final j = jsonDecode(r.body);
@@ -101,7 +114,7 @@ class Api {
     }
   }
 
-  static Future<String> fetchCover(int mitraId) async {
+  static Future<String> fetchCover(String mitraId) async {
     try {
       final r = await Net.get('$base/mitra-cover.php?id=$mitraId');
       final j = jsonDecode(r.body);
@@ -110,7 +123,7 @@ class Api {
     return '';
   }
 
-  static Future<List<Ulasan>> fetchUlasan(int mitraId) async {
+  static Future<List<Ulasan>> fetchUlasan(String mitraId) async {
     try {
       final r = await Net.get('$base/ulasan-list.php?mitra_id=$mitraId');
       final j = jsonDecode(r.body);
@@ -143,15 +156,36 @@ class Api {
     }
   }
 
-  static Future<({bool ok, String error})> postKebutuhan(Map<String, dynamic> data) async {
+  /// Posting kebutuhan baru. Mengembalikan true bila berhasil.
+  static Future<bool> postKebutuhan({
+    required String title,
+    required String kategori,
+    required String lokasi,
+    required String deskripsi,
+    required String budget,
+    required String wa,
+    String waktu = '',
+    String ic = '',
+    String bg = '',
+  }) async {
     try {
-      final payload = {...data, 'device_id': deviceId};
+      final payload = <String, dynamic>{
+        'title': title,
+        'kategori': kategori,
+        'lokasi': lokasi,
+        'deskripsi': deskripsi,
+        'budget': budget,
+        'wa': wa,
+        'waktu': waktu,
+        'ic': ic,
+        'bg': bg,
+        'device_id': deviceId,
+      };
       final r = await Net.postJson('$base/kebutuhan-tambah.php', payload);
       final j = jsonDecode(r.body);
-      if (j is Map && j['ok'] == true) return (ok: true, error: '');
-      return (ok: false, error: (j is Map && j['error'] != null) ? '${j['error']}' : 'Gagal posting kebutuhan.');
+      return j is Map && j['ok'] == true;
     } catch (_) {
-      return (ok: false, error: 'Tidak dapat terhubung ke server.');
+      return false;
     }
   }
 
