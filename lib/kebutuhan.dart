@@ -3,6 +3,8 @@ import 'api.dart';
 import 'core.dart';
 import 'models.dart';
 
+const int kMaxMitra = 7;
+
 String timeAgo(int ms) {
   if (ms <= 0) return '';
   final d = DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(ms));
@@ -109,6 +111,12 @@ class _KebutuhanScreenState extends State<KebutuhanScreen> {
     );
   }
 
+  bool _isMine(Kebutuhan k) {
+    if (_mine) return true;
+    final u = Api.currentUser;
+    return u != null && k.pembeliId.isNotEmpty && k.pembeliId == '${u.id}';
+  }
+
   void _openDetail(Kebutuhan k) {
     showModalBottomSheet(
       context: context,
@@ -117,7 +125,7 @@ class _KebutuhanScreenState extends State<KebutuhanScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => _DetailSheet(k: k),
+      builder: (_) => _DetailSheet(k: k, mine: _isMine(k), onChanged: _load),
     );
   }
 
@@ -221,54 +229,237 @@ class _KebutuhanScreenState extends State<KebutuhanScreen> {
   }
 }
 
-class _DetailSheet extends StatelessWidget {
+class _DetailSheet extends StatefulWidget {
   final Kebutuhan k;
-  const _DetailSheet({required this.k});
+  final bool mine;
+  final VoidCallback onChanged;
+  const _DetailSheet({required this.k, required this.mine, required this.onChanged});
+
+  @override
+  State<_DetailSheet> createState() => _DetailSheetState();
+}
+
+class _DetailSheetState extends State<_DetailSheet> {
+  late String _status;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _status = widget.k.status;
+  }
+
+  bool get _done => _status == 'done';
+
+  void _snack(String m) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  }
+
+  Future<void> _reopen() async {
+    setState(() => _busy = true);
+    final r = await Api.setKebutuhanStatus(widget.k.id, false);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (r.ok) {
+      setState(() => _status = 'open');
+      widget.onChanged();
+      _snack('Kebutuhan dibuka lagi.');
+    } else {
+      _snack(r.error);
+    }
+  }
+
+  Future<void> _openReview({required bool alreadyDone}) async {
+    final changed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _ReviewFlowSheet(k: widget.k, alreadyDone: alreadyDone),
+    );
+    if (changed == true && mounted) {
+      setState(() => _status = 'done');
+      widget.onChanged();
+      _snack(alreadyDone ? 'Ulasan terkirim. Makasih!' : 'Kebutuhan ditandai selesai.');
+    }
+  }
+
+  Future<void> _delete() async {
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Hapus postingan?'),
+        content: const Text('Postingan ini akan dihapus permanen dan tidak bisa dikembalikan.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(c, true),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFFDC2626)),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+    if (yes != true) return;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _busy = true);
+    final r = await Api.hapusKebutuhan(widget.k.id);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (r.ok) {
+      widget.onChanged();
+      Navigator.pop(context);
+      messenger.showSnackBar(const SnackBar(content: Text('Postingan dihapus.')));
+    } else {
+      _snack(r.error);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final k = widget.k;
+    final cc = k.contactedCount;
+    final pct = (cc / kMaxMitra).clamp(0.0, 1.0);
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE5E7EB),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
+        padding: EdgeInsets.only(left: 20, right: 20, top: 12, bottom: MediaQuery.of(context).viewInsets.bottom + 16),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(k.ic, style: const TextStyle(fontSize: 28)),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(k.title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE5E7EB),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                 ),
+                const SizedBox(height: 16),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(k.ic, style: const TextStyle(fontSize: 28)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(k.title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+                    ),
+                    if (_done)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(color: const Color(0xFFDCFCE7), borderRadius: BorderRadius.circular(20)),
+                        child: const Text('Selesai', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF166534))),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _row(Icons.category_outlined, k.cat.isEmpty ? 'Umum' : k.cat),
+                _row(Icons.location_on_outlined, k.loc.isEmpty ? '-' : k.loc),
+                if (k.budget.isNotEmpty) _row(Icons.payments_outlined, k.budget),
+                _row(Icons.person_outline, k.pembeliNama.isEmpty ? 'Pengguna' : k.pembeliNama),
+                _row(Icons.schedule, timeAgo(k.ts)),
+                if (k.deskripsi.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  const Text('Deskripsi', style: TextStyle(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 4),
+                  Text(k.deskripsi, style: const TextStyle(height: 1.5, color: Color(0xFF374151))),
+                ],
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _done ? const Color(0xFFF0FDF4) : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE8ECF3)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(_done ? '✅' : '🤝', style: const TextStyle(fontSize: 18)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _done ? 'Kebutuhan ini sudah selesai' : 'Sudah ditawar $cc dari $kMaxMitra mitra',
+                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                            ),
+                            if (!_done) ...[
+                              const SizedBox(height: 6),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: pct,
+                                  minHeight: 6,
+                                  backgroundColor: const Color(0xFFE5E7EB),
+                                  color: kBrand,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (widget.mine) ...[
+                  const SizedBox(height: 16),
+                  if (!_done)
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: _busy ? null : () => _openReview(alreadyDone: false),
+                        icon: const Icon(Icons.check_circle_outline),
+                        label: const Text('Tandai kebutuhan ini selesai'),
+                      ),
+                    )
+                  else ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: _busy ? null : () => _openReview(alreadyDone: true),
+                        icon: const Icon(Icons.star_outline),
+                        label: const Text('Beri ulasan'),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _busy ? null : _reopen,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Buka lagi kebutuhan ini'),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton.icon(
+                      onPressed: _busy ? null : _delete,
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFFDC2626),
+                        backgroundColor: const Color(0xFFFEE2E2),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      icon: const Icon(Icons.delete_outline),
+                      label: const Text('Hapus postingan ini'),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
               ],
             ),
-            const SizedBox(height: 12),
-            _row(Icons.category_outlined, k.cat.isEmpty ? 'Umum' : k.cat),
-            _row(Icons.location_on_outlined, k.loc.isEmpty ? '-' : k.loc),
-            if (k.budget.isNotEmpty) _row(Icons.payments_outlined, k.budget),
-            _row(Icons.person_outline, k.pembeliNama.isEmpty ? 'Pengguna' : k.pembeliNama),
-            _row(Icons.schedule, timeAgo(k.ts)),
-            if (k.deskripsi.isNotEmpty) ...[
-              const SizedBox(height: 14),
-              const Text('Deskripsi', style: TextStyle(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 4),
-              Text(k.deskripsi, style: const TextStyle(height: 1.5, color: Color(0xFF374151))),
-            ],
-            const SizedBox(height: 8),
-          ],
+          ),
         ),
       ),
     );
@@ -284,4 +475,257 @@ class _DetailSheet extends StatelessWidget {
           ],
         ),
       );
+}
+
+class _ReviewFlowSheet extends StatefulWidget {
+  final Kebutuhan k;
+  final bool alreadyDone;
+  const _ReviewFlowSheet({required this.k, required this.alreadyDone});
+
+  @override
+  State<_ReviewFlowSheet> createState() => _ReviewFlowSheetState();
+}
+
+class _ReviewFlowSheetState extends State<_ReviewFlowSheet> {
+  int _step = 0;
+  String _mitraId = '';
+  String _mitraNama = '';
+  int _rating = 5;
+  final _komentar = TextEditingController();
+  final _search = TextEditingController();
+  List<Mitra> _all = [];
+  List<Mitra> _results = [];
+  bool _loadingMitra = false;
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _komentar.dispose();
+    _search.dispose();
+    super.dispose();
+  }
+
+  Future<void> _ensureMitra() async {
+    if (_all.isNotEmpty || _loadingMitra) return;
+    setState(() => _loadingMitra = true);
+    try {
+      _all = await Api.fetchMitra();
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() => _loadingMitra = false);
+  }
+
+  void _onSearch(String q) {
+    final s = q.trim().toLowerCase();
+    setState(() {
+      _results = s.isEmpty
+          ? <Mitra>[]
+          : _all.where((m) => m.displayName.toLowerCase().contains(s) || m.kategori.toLowerCase().contains(s)).take(8).toList();
+    });
+  }
+
+  void _pick(String id, String nama) {
+    setState(() {
+      _mitraId = id;
+      _mitraNama = nama;
+      _step = 1;
+    });
+  }
+
+  void _snack(String m) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  }
+
+  Future<void> _skip() async {
+    setState(() => _busy = true);
+    final r = await Api.setKebutuhanStatus(widget.k.id, true);
+    if (!mounted) return;
+    if (r.ok) {
+      Navigator.pop(context, true);
+    } else {
+      setState(() => _busy = false);
+      _snack(r.error);
+    }
+  }
+
+  Future<void> _submit() async {
+    setState(() => _busy = true);
+    final r = await Api.tambahUlasan(
+      mitraId: _mitraId,
+      mitraNama: _mitraNama,
+      kebutuhanId: widget.k.id,
+      rating: _rating,
+      komentar: _komentar.text.trim(),
+      postTitle: widget.k.title,
+    );
+    if (!mounted) return;
+    if (!r.ok) {
+      setState(() => _busy = false);
+      _snack(r.error);
+      return;
+    }
+    if (!widget.alreadyDone) {
+      final s = await Api.setKebutuhanStatus(widget.k.id, true);
+      if (!mounted) return;
+      if (!s.ok) {
+        setState(() => _busy = false);
+        _snack(s.error);
+        return;
+      }
+    }
+    Navigator.pop(context, true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(left: 20, right: 20, top: 12, bottom: MediaQuery.of(context).viewInsets.bottom + 16),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+          child: SingleChildScrollView(child: _step == 0 ? _pickStep() : _rateStep()),
+        ),
+      ),
+    );
+  }
+
+  Widget _handle() => Center(
+        child: Container(
+          width: 40,
+          height: 4,
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(color: const Color(0xFFE5E7EB), borderRadius: BorderRadius.circular(2)),
+        ),
+      );
+
+  Widget _pickStep() {
+    final contacted = widget.k.contactedBy;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _handle(),
+        const Text('Pilih mitra yang mengerjakan', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+        const SizedBox(height: 4),
+        const Text('Pilih mitra untuk diberi ulasan, lalu kasih bintang & komentar.',
+            style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+        const SizedBox(height: 14),
+        if (contacted.isNotEmpty) ...[
+          const Text('Mitra yang menghubungi', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+          const SizedBox(height: 6),
+          ...contacted.map((c) => _mitraTile(c.id, c.nama)),
+          const SizedBox(height: 12),
+        ],
+        const Text('Cari mitra lain', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+        const SizedBox(height: 6),
+        TextField(
+          controller: _search,
+          onTap: _ensureMitra,
+          onChanged: _onSearch,
+          decoration: InputDecoration(
+            hintText: 'Ketik nama mitra / usaha…',
+            prefixIcon: const Icon(Icons.search),
+            isDense: true,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        if (_loadingMitra)
+          const Padding(
+            padding: EdgeInsets.all(12),
+            child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+          ),
+        ..._results.map((m) => _mitraTile(m.id, m.displayName)),
+        const SizedBox(height: 16),
+        if (!widget.alreadyDone)
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: _busy ? null : _skip,
+              child: const Text('Tandai selesai tanpa ulasan'),
+            ),
+          ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: TextButton(onPressed: _busy ? null : () => Navigator.pop(context, false), child: const Text('Batal')),
+        ),
+      ],
+    );
+  }
+
+  Widget _mitraTile(String id, String nama) {
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      color: const Color(0xFFF8FAFC),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: const CircleAvatar(backgroundColor: Color(0xFFEFF4FF), child: Text('🧰')),
+        title: Text(nama, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => _pick(id, nama),
+      ),
+    );
+  }
+
+  Widget _rateStep() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _handle(),
+        const Text('Beri ulasan', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(12)),
+          child: Row(
+            children: [
+              const Text('Mitra: ', style: TextStyle(color: Color(0xFF64748B))),
+              Expanded(child: Text(_mitraNama, style: const TextStyle(fontWeight: FontWeight.w700))),
+              TextButton(onPressed: _busy ? null : () => setState(() => _step = 0), child: const Text('ganti')),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(5, (i) {
+              final on = i < _rating;
+              return IconButton(
+                onPressed: _busy ? null : () => setState(() => _rating = i + 1),
+                icon: Icon(on ? Icons.star : Icons.star_border, size: 36, color: on ? const Color(0xFFF59E0B) : const Color(0xFFCBD5E1)),
+              );
+            }),
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _komentar,
+          maxLines: 4,
+          decoration: InputDecoration(
+            hintText: 'Tulis pengalamanmu dengan mitra ini…',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: _busy ? null : _submit,
+            child: _busy
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : Text(widget.alreadyDone ? 'Kirim ulasan' : 'Kirim ulasan & tandai selesai'),
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: TextButton(onPressed: _busy ? null : () => Navigator.pop(context, false), child: const Text('Batal')),
+        ),
+      ],
+    );
+  }
 }

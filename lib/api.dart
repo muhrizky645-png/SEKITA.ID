@@ -203,6 +203,65 @@ class Api {
     }
   }
 
+  // ---------- KEBUTUHAN: status / hapus / ulasan ----------
+
+  static Future<({bool ok, String error})> setKebutuhanStatus(String kebutuhanId, bool selesai) async {
+    try {
+      final r = await Net.postJson('$base/kebutuhan-status.php', {
+        'kebutuhan_id': int.tryParse(kebutuhanId) ?? 0,
+        'status': selesai ? 'selesai' : 'aktif',
+        'pembeli_wa': currentUser?.wa ?? '',
+      });
+      final j = jsonDecode(r.body);
+      if (j is Map && j['ok'] == true) return (ok: true, error: '');
+      return (ok: false, error: (j is Map && j['error'] != null) ? '${j['error']}' : 'Gagal memperbarui status.');
+    } catch (_) {
+      return (ok: false, error: 'Tidak dapat terhubung ke server.');
+    }
+  }
+
+  static Future<({bool ok, String error})> hapusKebutuhan(String id) async {
+    try {
+      final r = await Net.postJson('$base/kebutuhan-hapus.php', {
+        'id': int.tryParse(id) ?? 0,
+        'device_id': deviceId,
+      });
+      final j = jsonDecode(r.body);
+      if (j is Map && j['ok'] == true) return (ok: true, error: '');
+      return (ok: false, error: (j is Map && j['error'] != null) ? '${j['error']}' : 'Gagal menghapus postingan.');
+    } catch (_) {
+      return (ok: false, error: 'Tidak dapat terhubung ke server.');
+    }
+  }
+
+  static Future<({bool ok, String error})> tambahUlasan({
+    required String mitraId,
+    required String mitraNama,
+    required String kebutuhanId,
+    required int rating,
+    String komentar = '',
+    String postTitle = '',
+  }) async {
+    try {
+      final r = await Net.postJson('$base/ulasan-tambah.php', {
+        'mitra_id': int.tryParse(mitraId) ?? 0,
+        'mitra_nama': mitraNama,
+        'kebutuhan_id': int.tryParse(kebutuhanId) ?? 0,
+        'pembeli_id': currentUser?.id,
+        'penulis': currentUser?.nama ?? 'Pembeli',
+        'pembeli_avatar': currentUser?.avatar ?? '',
+        'post_title': postTitle,
+        'rating': rating,
+        'komentar': komentar,
+      });
+      final j = jsonDecode(r.body);
+      if (j is Map && j['ok'] == true) return (ok: true, error: '');
+      return (ok: false, error: (j is Map && j['error'] != null) ? '${j['error']}' : 'Gagal mengirim ulasan.');
+    } catch (_) {
+      return (ok: false, error: 'Tidak dapat terhubung ke server.');
+    }
+  }
+
   // ---------- AKUN ----------
 
   /// Ambil user dari sesi server. Mengisi [currentUser] bila login sebagai pembeli.
@@ -310,60 +369,3 @@ class Api {
         currentUser = null;
         return (ok: true, error: '');
       }
-      return (ok: false, error: (j is Map && j['error'] != null) ? '${j['error']}' : 'Gagal menghapus akun.');
-    } catch (_) {
-      return (ok: false, error: 'Tidak dapat terhubung ke server.');
-    }
-  }
-
-  // ---------- VERIFIKASI PEMBELI ----------
-
-  static Future<Map<String, dynamic>> verifStatus() async {
-    final id = currentUser?.id ?? 0;
-    if (id <= 0) return {'ok': false, 'error': 'Belum login.'};
-    try {
-      final r = await Net.get('$base/verif-pembeli-status.php?id=$id');
-      final j = jsonDecode(r.body);
-      if (j is Map) return Map<String, dynamic>.from(j);
-    } catch (_) {}
-    return {'ok': false, 'error': 'Tidak dapat terhubung ke server.'};
-  }
-
-  static Future<Map<String, dynamic>> verifEmailSend() async {
-    final id = currentUser?.id ?? 0;
-    try {
-      final r = await Net.postJson('$base/verif-pembeli-email-otp.php?action=send', {'id': id});
-      final j = jsonDecode(r.body);
-      if (j is Map) return Map<String, dynamic>.from(j);
-    } catch (_) {}
-    return {'ok': false, 'error': 'Tidak dapat terhubung ke server.'};
-  }
-
-  static Future<Map<String, dynamic>> verifEmailVerify(String code) async {
-    final id = currentUser?.id ?? 0;
-    try {
-      final r = await Net.postJson('$base/verif-pembeli-email-otp.php?action=verify', {'id': id, 'code': code});
-      final j = jsonDecode(r.body);
-      if (j is Map) return Map<String, dynamic>.from(j);
-    } catch (_) {}
-    return {'ok': false, 'error': 'Tidak dapat terhubung ke server.'};
-  }
-
-  static Future<Map<String, dynamic>> verifWaAjukan() async {
-    final id = currentUser?.id ?? 0;
-    try {
-      final r = await Net.postJson('$base/verif-pembeli-wa-ajukan.php', {'id': id});
-      final j = jsonDecode(r.body);
-      if (j is Map) return Map<String, dynamic>.from(j);
-    } catch (_) {}
-    return {'ok': false, 'error': 'Tidak dapat terhubung ke server.'};
-  }
-
-  static Future<void> logout() async {
-    try {
-      await Net.postJson('$base/sesi.php?action=logout', {});
-    } catch (_) {}
-    await Net.clear();
-    currentUser = null;
-  }
-}

@@ -87,6 +87,18 @@ class Ulasan {
   }
 }
 
+class KontakMitra {
+  final String id;
+  final String nama;
+
+  KontakMitra({required this.id, required this.nama});
+
+  factory KontakMitra.fromJson(Map<String, dynamic> j) => KontakMitra(
+        id: '${j['mitraId'] ?? ''}',
+        nama: '${j['nama'] ?? 'Mitra'}',
+      );
+}
+
 class Kebutuhan {
   final String id;
   final String title;
@@ -98,6 +110,9 @@ class Kebutuhan {
   final String status;
   final int ts;
   final String pembeliNama;
+  final String pembeliId;
+  final String wa;
+  final List<KontakMitra> contactedBy;
   final int contactedCount;
 
   Kebutuhan({
@@ -111,6 +126,9 @@ class Kebutuhan {
     required this.status,
     required this.ts,
     required this.pembeliNama,
+    required this.pembeliId,
+    required this.wa,
+    required this.contactedBy,
     required this.contactedCount,
   });
 
@@ -120,8 +138,11 @@ class Kebutuhan {
     int toI(dynamic v) => v == null ? 0 : (v is num ? v.toInt() : int.tryParse('$v') ?? 0);
     final p = j['pembeli'];
     final nama = (p is Map && p['nama'] != null) ? '${p['nama']}' : '';
+    final pid = (p is Map && p['id'] != null) ? '${p['id']}' : '';
     final cb = j['contactedBy'];
-    final count = cb is List ? cb.length : 0;
+    final contacts = cb is List
+        ? cb.map((e) => KontakMitra.fromJson(e as Map<String, dynamic>)).toList()
+        : <KontakMitra>[];
     return Kebutuhan(
       id: '${j['id'] ?? ''}',
       title: '${j['title'] ?? ''}',
@@ -133,7 +154,10 @@ class Kebutuhan {
       status: '${j['status'] ?? 'open'}',
       ts: toI(j['ts']),
       pembeliNama: nama,
-      contactedCount: count,
+      pembeliId: pid,
+      wa: '${j['wa'] ?? ''}',
+      contactedBy: contacts,
+      contactedCount: contacts.length,
     );
   }
 }
