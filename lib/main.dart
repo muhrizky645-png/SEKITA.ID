@@ -42,7 +42,7 @@ class _RootNavState extends State<RootNav> {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      const HomeScreen(),
+      HomeScreen(activeTab: _i),
       const SearchScreen(),
       PostKebutuhanScreen(onGoTab: _go),
       const KebutuhanScreen(),
@@ -66,7 +66,7 @@ class _RootNavState extends State<RootNav> {
   }
 }
 
-// ── FAB tengah (tombol Posting) ─ disembunyikan dengan animasi saat di tab Posting ─
+// \u2500\u2500 FAB tengah (tombol Posting) \u2500 disembunyikan dengan animasi saat di tab Posting \u2500
 class _PostingFab extends StatelessWidget {
   final bool hidden;
   final VoidCallback onTap;
@@ -112,7 +112,7 @@ class _PostingFab extends StatelessWidget {
   }
 }
 
-// ── Bottom bar dengan notch ───────────────────────────────────
+// \u2500\u2500 Bottom bar dengan notch \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 class _BottomBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelect;
