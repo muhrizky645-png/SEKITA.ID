@@ -37,66 +37,82 @@ class _RootNavState extends State<RootNav> {
   // 0=Beranda 1=Cari 2=Posting(FAB) 3=Kebutuhan 4=Akun
   int _i = 0;
 
+  void _go(int v) => setState(() => _i = v);
+
   @override
   Widget build(BuildContext context) {
     final pages = [
       const HomeScreen(),
       const SearchScreen(),
-      const PostKebutuhanScreen(),
+      PostKebutuhanScreen(onGoTab: _go),
       const KebutuhanScreen(),
       const AkunScreen(),
     ];
 
+    final onPosting = _i == 2;
+
     return Scaffold(
       body: IndexedStack(index: _i, children: pages),
       floatingActionButton: _PostingFab(
-        selected: _i == 2,
-        onTap: () => setState(() => _i = 2),
+        hidden: onPosting,
+        onTap: () => _go(2),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: _BottomBar(
         selectedIndex: _i,
-        onSelect: (v) => setState(() => _i = v),
+        onSelect: _go,
       ),
     );
   }
 }
 
-// ── FAB tengah (tombol Posting) ──────────────────────────────────────────────
+// ── FAB tengah (tombol Posting) ─ disembunyikan dengan animasi saat di tab Posting ─
 class _PostingFab extends StatelessWidget {
-  final bool selected;
+  final bool hidden;
   final VoidCallback onTap;
-  const _PostingFab({required this.selected, required this.onTap});
+  const _PostingFab({required this.hidden, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 64,
-        height: 64,
-        decoration: BoxDecoration(
-          color: selected ? kBrandDark : kBrand,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: kBrand.withOpacity(0.35),
-              blurRadius: 14,
-              offset: const Offset(0, 5),
+    return IgnorePointer(
+      ignoring: hidden,
+      child: AnimatedScale(
+        scale: hidden ? 0.0 : 1.0,
+        duration: Duration(milliseconds: hidden ? 200 : 320),
+        curve: hidden ? Curves.easeInBack : Curves.easeOutBack,
+        child: AnimatedOpacity(
+          opacity: hidden ? 0.0 : 1.0,
+          duration: const Duration(milliseconds: 180),
+          child: GestureDetector(
+            onTap: onTap,
+            child: Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: kBrand,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: kBrand.withOpacity(0.35),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.add,
+                color: Colors.white,
+                size: 32,
+              ),
             ),
-          ],
-        ),
-        child: Icon(
-          selected ? Icons.add_circle : Icons.add_circle_outline,
-          color: Colors.white,
-          size: 32,
+          ),
         ),
       ),
     );
   }
 }
 
-// ── Bottom bar dengan notch ──────────────────────────────────────────────────
+// ── Bottom bar dengan notch ───────────────────────────────────
 class _BottomBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelect;
@@ -117,19 +133,22 @@ class _BottomBar extends StatelessWidget {
             _item(Icons.search_outlined, Icons.search, 'Cari', 1),
             // ruang + label FAB
             Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    'Posting',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: selectedIndex == 2 ? FontWeight.w700 : FontWeight.normal,
-                      color: selectedIndex == 2 ? kBrand : Colors.grey[600],
+              child: InkWell(
+                onTap: () => onSelect(2),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Posting',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: selectedIndex == 2 ? FontWeight.w700 : FontWeight.normal,
+                        color: selectedIndex == 2 ? kBrand : Colors.grey[600],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                ],
+                    const SizedBox(height: 6),
+                  ],
+                ),
               ),
             ),
             _item(Icons.assignment_outlined, Icons.assignment, 'Kebutuhan', 3),
