@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'api.dart';
 import 'core.dart';
 import 'models.dart';
+import 'widgets.dart';
 
 const int kMaxMitra = 7;
 
@@ -692,10 +693,26 @@ class _ReviewFlowSheetState extends State<_ReviewFlowSheet> {
   bool _busy = false;
 
   @override
+  void initState() {
+    super.initState();
+    _preloadMitra();
+  }
+
+  @override
   void dispose() {
     _komentar.dispose();
     _search.dispose();
     super.dispose();
+  }
+
+  /// Pra-muat daftar mitra (diam-diam) supaya tile "mitra yang menghubungi"
+  /// bisa langsung tampil dengan foto profil / ikon kategori yang benar.
+  Future<void> _preloadMitra() async {
+    try {
+      final list = await Api.fetchMitra();
+      if (!mounted) return;
+      setState(() => _all = list);
+    } catch (_) {}
   }
 
   Future<void> _ensureMitra() async {
@@ -706,6 +723,13 @@ class _ReviewFlowSheetState extends State<_ReviewFlowSheet> {
     } catch (_) {}
     if (!mounted) return;
     setState(() => _loadingMitra = false);
+  }
+
+  Mitra? _findMitra(String id) {
+    for (final m in _all) {
+      if (m.id == id) return m;
+    }
+    return null;
   }
 
   void _onSearch(String q) {
@@ -807,7 +831,10 @@ class _ReviewFlowSheetState extends State<_ReviewFlowSheet> {
         if (contacted.isNotEmpty) ...[
           const Text('Mitra yang menghubungi', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
           const SizedBox(height: 6),
-          ...contacted.map((c) => _mitraTile(c.id, c.nama)),
+          ...contacted.map((c) {
+            final m = _findMitra(c.id);
+            return _mitraTile(c.id, m?.displayName ?? c.nama, mitra: m);
+          }),
           const SizedBox(height: 12),
         ],
         const Text('Cari mitra lain', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
@@ -828,7 +855,7 @@ class _ReviewFlowSheetState extends State<_ReviewFlowSheet> {
             padding: EdgeInsets.all(12),
             child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
           ),
-        ..._results.map((m) => _mitraTile(m.id, m.displayName)),
+        ..._results.map((m) => _mitraTile(m.id, m.displayName, mitra: m)),
         const SizedBox(height: 16),
         if (!widget.alreadyDone)
           SizedBox(
@@ -847,15 +874,31 @@ class _ReviewFlowSheetState extends State<_ReviewFlowSheet> {
     );
   }
 
-  Widget _mitraTile(String id, String nama) {
+  Widget _mitraTile(String id, String nama, {Mitra? mitra}) {
+    final cat = mitra?.kategori ?? '';
     return Card(
       elevation: 0,
       margin: const EdgeInsets.symmetric(vertical: 4),
       color: const Color(0xFFF8FAFC),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
-        leading: const CircleAvatar(backgroundColor: Color(0xFFEFF4FF), child: Text('\ud83e\uddf0')),
+        leading: ClipOval(
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: mitra != null
+                ? MitraAvatar(m: mitra)
+                : Container(
+                    color: const Color(0xFFEFF4FF),
+                    alignment: Alignment.center,
+                    child: const Text('\ud83e\uddf0'),
+                  ),
+          ),
+        ),
         title: Text(nama, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        subtitle: cat.isNotEmpty
+            ? Text(cat, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: Colors.grey[600]))
+            : null,
         trailing: const Icon(Icons.chevron_right),
         onTap: () => _pick(id, nama),
       ),
