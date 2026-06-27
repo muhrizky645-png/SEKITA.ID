@@ -7,10 +7,12 @@ import 'kebutuhan.dart';
 import 'post.dart';
 import 'akun.dart';
 import 'mitra.dart';
+import 'notif.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Api.initDeviceId();
+  await Notif.init();
   runApp(const SekitaApp());
 }
 
@@ -43,6 +45,7 @@ class _RootNavState extends State<RootNav> {
   @override
   void initState() {
     super.initState();
+    Notif.setOnOpen(_onNotifOpen);
     Api.mode.addListener(_onMode);
     _restore();
   }
@@ -50,16 +53,37 @@ class _RootNavState extends State<RootNav> {
   // Pulihkan sesi (pembeli/mitra) saat app dibuka, lalu setState agar nav sesuai.
   Future<void> _restore() async {
     await Api.me();
+    await _syncNotifTags();
     if (mounted) setState(() {});
   }
 
   void _onMode() {
+    _syncNotifTags();
     if (mounted) setState(() {});
+  }
+
+  // Tap notifikasi lead -> pastikan tab Lead aktif (mode mitra).
+  void _onNotifOpen(Map<String, dynamic> data) {
+    if (!mounted) return;
+    if (Api.mode.value == 'mitra') {
+      setState(() => _mi = 0);
+    }
+  }
+
+  // Sinkronkan tag OneSignal sesuai peran aktif.
+  Future<void> _syncNotifTags() async {
+    if (Api.mode.value == 'mitra') {
+      await Notif.requestPermission();
+      await Notif.setMitraTags(Api.currentMitra?.kategori ?? '');
+    } else {
+      await Notif.clearMitraTags();
+    }
   }
 
   @override
   void dispose() {
     Api.mode.removeListener(_onMode);
+    Notif.clearOnOpen();
     super.dispose();
   }
 
@@ -111,7 +135,7 @@ class _RootNavState extends State<RootNav> {
   }
 }
 
-// \u2500\u2500 FAB tengah (tombol Posting) \u2500 disembunyikan dengan animasi saat di tab Posting \u2500
+// ── FAB tengah (tombol Posting) ─ disembunyikan dengan animasi saat di tab Posting ─
 class _PostingFab extends StatelessWidget {
   final bool hidden;
   final VoidCallback onTap;
@@ -157,7 +181,7 @@ class _PostingFab extends StatelessWidget {
   }
 }
 
-// \u2500\u2500 Bottom bar dengan notch \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// ── Bottom bar dengan notch ──────────────────────────────────
 class _BottomBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelect;
