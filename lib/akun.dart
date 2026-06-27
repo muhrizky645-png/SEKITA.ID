@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'api.dart';
 import 'core.dart';
 import 'models.dart';
+import 'mitra.dart';
 
 const String _adminWa = '089607620368';
 const Color _line = Color(0xFFE8ECF3);
@@ -59,6 +60,58 @@ class _AkunScreenState extends State<AkunScreen> {
     await _refresh();
   }
 
+  /// User pembeli yang sudah login menekan "Mode Mitra".
+  /// Coba pindah peran via WA; bila belum punya akun mitra -> form Jadi Mitra.
+  Future<void> _goMitra() async {
+    showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
+    final r = await Api.switchRole('mitra');
+    if (mounted) Navigator.of(context).pop();
+    if (!mounted) return;
+    if (r.ok) return; // RootNav mendengar Api.mode -> otomatis pindah ke UI mitra
+    if (r.reason == 'no_account') {
+      await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const JadiMitraScreen()));
+      await _refresh();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(r.error)));
+    }
+  }
+
+  /// Tamu (belum login) menekan entry mitra -> pilih Masuk atau Daftar mitra.
+  void _mitraGuest() {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.login, color: kBrand),
+              title: const Text('Masuk sebagai Mitra'),
+              subtitle: const Text('Sudah punya akun mitra'),
+              onTap: () async {
+                Navigator.of(ctx).pop();
+                await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MitraLoginScreen()));
+                await _refresh();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.storefront_outlined, color: Color(0xFF7C3AED)),
+              title: const Text('Daftar jadi Mitra'),
+              subtitle: const Text('Daftarkan usahamu, gratis'),
+              onTap: () async {
+                Navigator.of(ctx).pop();
+                await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const JadiMitraScreen()));
+                await _refresh();
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = Api.currentUser;
@@ -89,6 +142,11 @@ class _AkunScreenState extends State<AkunScreen> {
         _MenuRow(icon: verified ? Icons.verified_outlined : Icons.shield_outlined, color: _ok, title: 'Verifikasi Akun', subtitle: verified ? 'Akun kamu sudah terverifikasi' : 'Verifikasi email & WhatsApp', onTap: () => _open(const _VerifikasiScreen())),
       ]),
       const SizedBox(height: 14),
+      _label('Untuk Penyedia Jasa'),
+      _card([
+        _MenuRow(icon: Icons.storefront_outlined, color: const Color(0xFF7C3AED), title: 'Mode Mitra', subtitle: 'Terima & hubungi lead sebagai penyedia jasa', onTap: _goMitra),
+      ]),
+      const SizedBox(height: 14),
       _label('Bantuan & Info'),
       _card([
         _MenuRow(icon: Icons.help_outline, color: kBrand, title: 'Bantuan & FAQ', subtitle: 'Pertanyaan yang sering ditanya', onTap: () => _open(const _FaqScreen())),
@@ -109,6 +167,11 @@ class _AkunScreenState extends State<AkunScreen> {
         _MenuRow(icon: Icons.help_outline, color: kBrand, title: 'Bantuan & FAQ', subtitle: 'Pertanyaan yang sering ditanya', onTap: () => _open(const _FaqScreen())),
         _MenuRow(icon: Icons.gavel_outlined, color: const Color(0xFF7C3AED), title: 'Syarat & Ketentuan', subtitle: 'Ketentuan penggunaan Sekita', onTap: () => _open(const _SyaratScreen())),
         _MenuRow(icon: Icons.info_outline, color: _muted, title: 'Tentang Aplikasi', subtitle: 'Info Sekita, kontak & versi', onTap: _tentang),
+      ]),
+      const SizedBox(height: 14),
+      _label('Untuk Penyedia Jasa'),
+      _card([
+        _MenuRow(icon: Icons.storefront_outlined, color: const Color(0xFF7C3AED), title: 'Masuk / Daftar sebagai Mitra', subtitle: 'Punya usaha? Terima lead dari pelanggan', onTap: _mitraGuest),
       ]),
     ];
   }
@@ -509,7 +572,7 @@ class _EditProfilScreenState extends State<_EditProfilScreen> {
               children: [
                 Icon(Icons.info_outline, size: 18, color: Color(0xFFB45309)),
                 SizedBox(width: 8),
-                Expanded(child: Text('Mengubah nomor WhatsApp atau email akan mereset status verifikasi ke "belum diverifikasi", dan perlu diverifikasi ulang.', style: TextStyle(fontSize: 12.5, height: 1.4, color: Color(0xFF92400E)))),
+                Expanded(child: Text('Mengubah nomor WhatsApp atau email akan mereset status verifikasi ke \"belum diverifikasi\", dan perlu diverifikasi ulang.', style: TextStyle(fontSize: 12.5, height: 1.4, color: Color(0xFF92400E)))),
               ],
             ),
           ),
@@ -851,8 +914,8 @@ const List<_FaqGroup> _faqData = [
     _Faq('Apa itu Sekita?', 'Sekita adalah platform yang mempertemukan kamu dengan penyedia jasa lokal di Yogyakarta & sekitarnya. Cukup posting kebutuhanmu secara gratis, lalu penyedia jasa yang sesuai akan datang menghubungimu. Slogannya: Posting kebutuhanmu. Biarkan ahlinya datang.'),
     _Faq('Bagaimana cara posting kebutuhan?', 'Buka tab Posting, isi jenis kebutuhan, lokasi, perkiraan budget, dan deskripsi singkat. Setelah diposting, kebutuhanmu tampil di Sekita dan mitra yang relevan bisa menghubungimu via WhatsApp. Catatan: kalau kamu sudah punya akun pembeli, verifikasi email & WhatsApp dulu di halaman akun supaya bisa posting.'),
     _Faq('Apakah memakai Sekita gratis?', 'Buat pelanggan, 100% gratis - posting kebutuhan dan menerima penawaran tidak dipungut biaya. Mitra (penyedia jasa) hanya membayar paket Kontak untuk membuka data pelanggan.'),
-    _Faq('Bagaimana penyedia jasa menghubungi saya?', 'Mitra yang tertarik akan membuka kontakmu lalu menghubungi langsung lewat WhatsApp. Nomormu tidak ditampilkan bebas - hanya terbuka saat mitra menekan tombol "Hubungi", dan setiap pembukaan tercatat.'),
-    _Faq('Bagaimana cara memberi ulasan?', 'Buka dashboard akunmu, tandai kebutuhan yang sudah beres dengan "Tandai Selesai", lalu tombol "Beri ulasan" akan muncul. Ulasanmu membantu pelanggan lain memilih mitra terbaik.'),
+    _Faq('Bagaimana penyedia jasa menghubungi saya?', 'Mitra yang tertarik akan membuka kontakmu lalu menghubungi langsung lewat WhatsApp. Nomormu tidak ditampilkan bebas - hanya terbuka saat mitra menekan tombol \"Hubungi\", dan setiap pembukaan tercatat.'),
+    _Faq('Bagaimana cara memberi ulasan?', 'Buka dashboard akunmu, tandai kebutuhan yang sudah beres dengan \"Tandai Selesai\", lalu tombol \"Beri ulasan\" akan muncul. Ulasanmu membantu pelanggan lain memilih mitra terbaik.'),
   ]),
   _FaqGroup('Untuk Mitra (Penyedia Jasa)', [
     _Faq('Bagaimana cara jadi mitra?', 'Buka halaman Daftar / Masuk, pilih peran Mitra, lalu isi tab Daftar Jadi Mitra - gratis. Lengkapi nama usaha, kategori jasa, lokasi, WhatsApp, email & kata sandi. Setelah daftar, kamu langsung dapat 20 Kontak gratis dan bisa melihat kebutuhan pelanggan di sekitarmu.'),
@@ -861,7 +924,7 @@ const List<_FaqGroup> _faqData = [
     _Faq('Apa arti badge verifikasi?', 'Badge menunjukkan tingkat kepercayaan mitra dalam 4 tingkat: Pemula (baru daftar) -> Tepercaya (profil lengkap + WA & email terverifikasi) -> Terverifikasi (foto diri & KTP) -> Pro (lengkap + surat izin usaha). Badge membantu pelanggan menilai, tapi bukan jaminan mutlak - selalu cek profil & ulasan sebelum bertransaksi.'),
   ]),
   _FaqGroup('Akun & Privasi', [
-    _Faq('Apakah nomor WhatsApp saya aman?', 'Aman. Nomor pembeli maupun penyedia tidak ditampilkan ke publik. Nomor hanya terbuka lewat tombol "Hubungi", dan setiap pembukaan dicatat.'),
+    _Faq('Apakah nomor WhatsApp saya aman?', 'Aman. Nomor pembeli maupun penyedia tidak ditampilkan ke publik. Nomor hanya terbuka lewat tombol \"Hubungi\", dan setiap pembukaan dicatat.'),
     _Faq('Saya lupa kata sandi, bagaimana?', 'Buka halaman Daftar / Masuk, masuk ke tab Masuk, lalu klik Lupa kata sandi di bawah kolom sandi. Masukkan email akunmu, dan kami kirim tautan reset ke email itu (berlaku 1 jam).'),
     _Faq('Bagaimana data saya dikelola?', 'Kami hanya memakai datamu untuk menjalankan layanan dan tidak menjualnya ke pihak mana pun. Selengkapnya baca Kebijakan Privasi dan Syarat & Ketentuan.'),
   ]),
