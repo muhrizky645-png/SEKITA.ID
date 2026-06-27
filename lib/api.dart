@@ -161,7 +161,11 @@ class Api {
 
   static Future<List<Kebutuhan>> fetchKebutuhanMine() async {
     try {
-      final r = await http.get(Uri.parse('$base/kebutuhan-mine.php?device_id=$deviceId'));
+      // Kirim pembeli_id saat login supaya postingan IKUT AKUN (lintas device),
+      // plus device_id supaya postingan lama sebagai tamu di device ini tetap kebawa.
+      final pid = currentUser?.id ?? 0;
+      final extra = pid > 0 ? '&pembeli_id=$pid' : '';
+      final r = await http.get(Uri.parse('$base/kebutuhan-mine.php?device_id=$deviceId$extra'));
       final j = jsonDecode(r.body);
       if (j is Map && j['kebutuhan'] is List) {
         return (j['kebutuhan'] as List).map((e) => Kebutuhan.fromJson(e as Map<String, dynamic>)).toList();
@@ -207,10 +211,12 @@ class Api {
 
   static Future<({bool ok, String error})> setKebutuhanStatus(String kebutuhanId, bool selesai) async {
     try {
+      // Kepemilikan dicek di server lewat SESI (pembeli_id) ATAU device_id,
+      // konsisten dengan edit/hapus. Net.postJson mengirim cookie sesi.
       final r = await Net.postJson('$base/kebutuhan-status.php', {
         'kebutuhan_id': int.tryParse(kebutuhanId) ?? 0,
         'status': selesai ? 'selesai' : 'aktif',
-        'pembeli_wa': currentUser?.wa ?? '',
+        'device_id': deviceId,
       });
       final j = jsonDecode(r.body);
       if (j is Map && j['ok'] == true) return (ok: true, error: '');
