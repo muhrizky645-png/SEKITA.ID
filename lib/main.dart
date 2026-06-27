@@ -6,6 +6,7 @@ import 'search.dart';
 import 'kebutuhan.dart';
 import 'post.dart';
 import 'akun.dart';
+import 'mitra.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,13 +35,42 @@ class RootNav extends StatefulWidget {
 }
 
 class _RootNavState extends State<RootNav> {
-  // 0=Beranda 1=Cari 2=Posting(FAB) 3=Kebutuhan 4=Akun
+  // Mode pembeli: 0=Beranda 1=Cari 2=Posting(FAB) 3=Kebutuhan 4=Akun
   int _i = 0;
+  // Mode mitra: 0=Lead 1=Akun Mitra
+  int _mi = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    Api.mode.addListener(_onMode);
+    _restore();
+  }
+
+  // Pulihkan sesi (pembeli/mitra) saat app dibuka, lalu setState agar nav sesuai.
+  Future<void> _restore() async {
+    await Api.me();
+    if (mounted) setState(() {});
+  }
+
+  void _onMode() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    Api.mode.removeListener(_onMode);
+    super.dispose();
+  }
 
   void _go(int v) => setState(() => _i = v);
 
   @override
   Widget build(BuildContext context) {
+    return Api.mode.value == 'mitra' ? _buildMitra() : _buildPembeli();
+  }
+
+  Widget _buildPembeli() {
     final pages = [
       HomeScreen(activeTab: _i),
       const SearchScreen(),
@@ -61,6 +91,21 @@ class _RootNavState extends State<RootNav> {
       bottomNavigationBar: _BottomBar(
         selectedIndex: _i,
         onSelect: _go,
+      ),
+    );
+  }
+
+  Widget _buildMitra() {
+    final pages = [const LeadScreen(), const AkunMitraScreen()];
+    return Scaffold(
+      body: IndexedStack(index: _mi, children: pages),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _mi,
+        onDestinationSelected: (v) => setState(() => _mi = v),
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.work_outline), selectedIcon: Icon(Icons.work), label: 'Lead'),
+          NavigationDestination(icon: Icon(Icons.storefront_outlined), selectedIcon: Icon(Icons.storefront), label: 'Akun Mitra'),
+        ],
       ),
     );
   }
