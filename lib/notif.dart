@@ -82,18 +82,12 @@ class Notif {
     } catch (_) {}
   }
 
-  /// Slugify kategori: 'Servis AC' -> 'servis_ac'. Harus sama dengan slug di server.
+  /// Slugify kategori SAMA PERSIS dgn server (sekita_slug_tag di kebutuhan-tambah.php):
+  /// lowercase -> ganti tiap runtun non-[a-z0-9] jadi '_' -> trim '_'.
+  /// Contoh: 'Servis AC' -> 'servis_ac', 'AC/Kulkas' -> 'ac_kulkas'.
   static String _slug(String s) {
     final lower = s.toLowerCase().trim();
-    final buf = StringBuffer();
-    for (var i = 0; i < lower.length; i++) {
-      final ch = lower[i];
-      if (RegExp(r'[a-z0-9]').hasMatch(ch)) {
-        buf.write(ch);
-      } else if (ch == ' ' || ch == '-' || ch == '_') {
-        buf.write('_');
-      }
-    }
-    return buf.toString().replaceAll(RegExp(r'_+'), '_').replaceAll(RegExp(r'^_+|_+$'), '');
+    final replaced = lower.replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+    return replaced.replaceAll(RegExp(r'^_+|_+$'), '');
   }
 }
