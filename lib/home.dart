@@ -180,17 +180,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _header(dynamic user) {
     final subtitle = (user != null && (user.nama as String).isNotEmpty)
-        ? 'Hai, ${(user.nama as String).split(' ').first}! \ud83d\udc4b'
+        ? 'Hai, ${(user.nama as String).split(' ').first}! 👋'
         : 'Temukan jasa profesional di sekitarmu';
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
       child: Row(
         children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(color: kBrand, borderRadius: BorderRadius.circular(10)),
-            child: const Icon(Icons.search, color: Colors.white, size: 22),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.asset(
+              'assets/icon/sekita_icon.png',
+              width: 38,
+              height: 38,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                    color: kBrand, borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.search, color: Colors.white, size: 22),
+              ),
+            ),
           ),
           const SizedBox(width: 10),
           Column(
@@ -230,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // \u2500\u2500 Banner auto-scroll (3 detik, infinite ke kiri) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  // Banner auto-scroll (3 detik, infinite ke kiri)
   Widget _banners(BuildContext context) {
     final w = MediaQuery.of(context).size.width - 32;
     final h = w / 4;
@@ -279,7 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // \u2500\u2500 Kategori: icon dibungkus kotak (seperti card mitra) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  // Kategori: icon dibungkus kotak (seperti card mitra)
   Widget _categories() {
     return SizedBox(
       height: 90,
@@ -335,7 +345,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: Row(
           children: [
-            const Text('\ud83d\udcdd', style: TextStyle(fontSize: 24)),
+            const Text('📝', style: TextStyle(fontSize: 24)),
             const SizedBox(width: 10),
             const Expanded(
               child: Text(
@@ -362,7 +372,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // \u2500\u2500 Kebutuhanmu Terbaru (mode pembeli) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  // Kebutuhanmu Terbaru (mode pembeli)
   Widget _myKebutuhanSection() {
     return FutureBuilder<List<Kebutuhan>>(
       future: _myFuture,
@@ -384,7 +394,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (list.isNotEmpty)
                     GestureDetector(
                       onTap: _goKebutuhan,
-                      child: const Text('Lihat semua \u2192',
+                      child: const Text('Lihat semua →',
                           style: TextStyle(
                               fontSize: 12,
                               color: kBrand,
@@ -438,7 +448,7 @@ class _HomeScreenState extends State<HomeScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
           const SizedBox(height: 6),
-          Text('Posting kebutuhanmu, biar mitra yang datang \ud83d\ude4c',
+          Text('Posting kebutuhanmu, biar mitra yang datang 🙌',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: Colors.grey[600])),
         ],
@@ -459,7 +469,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: Row(
           children: [
-            Text(k.ic.isEmpty ? '\ud83d\udcdd' : k.ic,
+            Text(k.ic.isEmpty ? '📝' : k.ic,
                 style: const TextStyle(fontSize: 20)),
             const SizedBox(width: 10),
             Expanded(
