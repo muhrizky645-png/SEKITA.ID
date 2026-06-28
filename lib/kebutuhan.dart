@@ -163,15 +163,9 @@ class _KebutuhanScreenState extends State<KebutuhanScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF4FF),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                alignment: Alignment.center,
-                child: Text(k.ic, style: const TextStyle(fontSize: 22)),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(width: 46, height: 46, child: KebutuhanAvatar(k: k)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -376,8 +370,11 @@ class _DetailSheetState extends State<_DetailSheet> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(k.ic, style: const TextStyle(fontSize: 28)),
-                    const SizedBox(width: 10),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: SizedBox(width: 44, height: 44, child: KebutuhanAvatar(k: k)),
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(k.title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
                     ),
