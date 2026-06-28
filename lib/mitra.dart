@@ -13,6 +13,78 @@ const Color _line = Color(0xFFE8ECF3);
 const Color _green = Color(0xFF16A34A);
 const int _kMaxMitra = 7;
 
+/// Normalisasi kategori "Lainnya (xxx)" -> "lainnya" untuk pencocokan.
+String _catBase(String c) => c.split('(').first.trim().toLowerCase();
+
+/// true jika kebutuhan kategori [cat] di luar bidang mitra yang sedang login.
+/// Mitra tanpa kategori dianggap umum (boleh menghubungi semua lead).
+bool _outOfCategory(String cat) {
+  final mine = Api.currentMitra?.kategori ?? '';
+  if (mine.trim().isEmpty || cat.trim().isEmpty) return false;
+  return _catBase(cat) != _catBase(mine);
+}
+
+/// Popup konfirmasi bergaya web: kartu putih, ikon besar, tombol hijau.
+/// Mengembalikan true bila tombol utama ditekan.
+Future<bool> _waModal(
+  BuildContext context, {
+  required Widget icon,
+  required String title,
+  required String body,
+  required String go,
+  String sec = '',
+}) async {
+  final r = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 26, 24, 18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            icon,
+            const SizedBox(height: 10),
+            Text(title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20, color: kInk)),
+            const SizedBox(height: 6),
+            Text(body, textAlign: TextAlign.center, style: const TextStyle(color: _muted, fontSize: 14.5, height: 1.55)),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _green,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
+                ),
+                child: Text(go, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+              ),
+            ),
+            if (sec.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(sec, style: const TextStyle(color: _muted, fontSize: 13.5)),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ),
+  );
+  return r == true;
+}
+
+/// Ikon WhatsApp besar untuk header popup (pakai aset, fallback ikon hijau).
+Widget _waBigIcon() => Image.asset(
+      'assets/img/wa.png',
+      width: 54,
+      height: 54,
+      errorBuilder: (_, __, ___) => const Icon(Icons.chat, size: 54, color: _green),
+    );
+
 /// Kartu putih membungkus daftar baris menu (dengan pemisah tipis).
 Widget _menuCard(List<Widget> rows) {
   final children = <Widget>[];
@@ -128,26 +200,42 @@ class _LeadScreenState extends State<LeadScreen> {
   }
 
   Future<void> _hubungi(Kebutuhan k) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Hubungi pelanggan?'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Biaya 1 Kontak. Gratis bila kamu menghubungi lead ini lagi dalam 24 jam.'),
-            const SizedBox(height: 8),
-            Text('Saldo kamu: ${Api.currentMitra?.kuota ?? 0} Kontak', style: const TextStyle(color: _muted)),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Lanjut')),
-        ],
-      ),
+    // Lead di luar kategori mitra tidak boleh dihubungi (samakan dengan web).
+    if (_outOfCategory(k.cat)) {
+      await _waModal(
+        context,
+        icon: const Text('\u{1F64F}', style: TextStyle(fontSize: 46)),
+        title: 'Di luar bidang keahlianmu',
+        body: 'Kebutuhan ini di luar kategori keahlianmu. Tambah kategori di profil mitra kalau kamu memang melayani ini.',
+        go: 'Mengerti',
+      );
+      return;
+    }
+
+    // Saldo Kontak habis -> popup isi ulang (teks & gaya seperti web).
+    final saldo = Api.currentMitra?.kuota ?? 0;
+    if (saldo <= 0) {
+      final go = await _waModal(
+        context,
+        icon: const Text('\u{1F4ED}', style: TextStyle(fontSize: 46)),
+        title: 'Kontak Tersedia habis',
+        body: 'Isi ulang dulu biar bisa buka WhatsApp pelanggan.',
+        go: 'Lihat Paket Kontak',
+        sec: 'Nanti dulu',
+      );
+      if (go) _isiUlang();
+      return;
+    }
+
+    final ok = await _waModal(
+      context,
+      icon: _waBigIcon(),
+      title: 'Lanjut chat WhatsApp?',
+      body: 'Kalau lanjut, 1 Kontak Tersedia kepakai ya.',
+      go: 'Lanjut buka WhatsApp',
+      sec: 'Batal',
     );
-    if (ok != true) return;
+    if (!ok) return;
 
     showDialog(
       context: context,
@@ -176,7 +264,11 @@ class _LeadScreenState extends State<LeadScreen> {
       k.wa,
       text: 'Halo, saya mitra Sekita. Saya tertarik membantu kebutuhan \"${k.title}\"$loc. Apakah masih dibutuhkan?',
     );
-    if (r.deducted) _snack('1 Kontak terpakai. Sisa saldo: ${r.kuota} Kontak.');
+    if (r.deducted) {
+      _snack('WhatsApp kebuka. 1 Kontak Tersedia kepakai. Sisa: ${r.kuota} Kontak.');
+    } else {
+      _snack('WhatsApp kebuka. Tidak ada Kontak terpakai (sudah dihubungi <24 jam).');
+    }
   }
 
   Future<void> _isiUlang() async {
@@ -309,6 +401,7 @@ class _LeadCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final out = _outOfCategory(k.cat);
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -364,12 +457,19 @@ class _LeadCard extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text('${k.contactedCount}/$_kMaxMitra penawar', style: const TextStyle(color: _muted, fontSize: 12.5)),
                   const Spacer(),
-                  FilledButton.icon(
-                    onPressed: onHubungi,
-                    style: FilledButton.styleFrom(backgroundColor: _green),
-                    icon: Image.asset('assets/img/wa.png', width: 18, height: 18, errorBuilder: (_, __, ___) => const Icon(Icons.chat_outlined, size: 18)),
-                    label: const Text('WhatsApp'),
-                  ),
+                  if (out)
+                    FilledButton.icon(
+                      onPressed: null,
+                      icon: const Icon(Icons.block, size: 16),
+                      label: const Text('Di luar bidang'),
+                    )
+                  else
+                    FilledButton.icon(
+                      onPressed: onHubungi,
+                      style: FilledButton.styleFrom(backgroundColor: _green),
+                      icon: Image.asset('assets/img/wa.png', width: 18, height: 18, errorBuilder: (_, __, ___) => const Icon(Icons.chat_outlined, size: 18)),
+                      label: const Text('WhatsApp'),
+                    ),
                 ],
               ),
             ],
@@ -400,6 +500,7 @@ class _LeadDetailSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final cc = k.contactedCount;
     final pct = (cc / _kMaxMitra).clamp(0.0, 1.0);
+    final out = _outOfCategory(k.cat);
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(left: 20, right: 20, top: 12, bottom: MediaQuery.of(context).viewInsets.bottom + 16),
@@ -481,19 +582,43 @@ class _LeadDetailSheet extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      onHubungi();
-                    },
-                    style: FilledButton.styleFrom(backgroundColor: _green),
-                    icon: Image.asset('assets/img/wa.png', width: 20, height: 20, errorBuilder: (_, __, ___) => const Icon(Icons.chat_outlined, size: 20)),
-                    label: const Text('Hubungi via WhatsApp', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                if (out) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: FilledButton.icon(
+                      onPressed: null,
+                      icon: const Icon(Icons.block, size: 20),
+                      label: const Text('Di luar bidang keahlianmu', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF7ED),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFED7AA)),
+                    ),
+                    child: const Text(
+                      'Kebutuhan ini di luar kategori keahlianmu. Sekita bantu pelanggan menemukan penyedia paling sesuai. Tambah kategori di profil mitra kalau kamu memang melayani ini.',
+                      style: TextStyle(color: Color(0xFF9A3412), fontSize: 12.5, height: 1.5),
+                    ),
+                  ),
+                ] else
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        onHubungi();
+                      },
+                      style: FilledButton.styleFrom(backgroundColor: _green),
+                      icon: Image.asset('assets/img/wa.png', width: 20, height: 20, errorBuilder: (_, __, ___) => const Icon(Icons.chat_outlined, size: 20)),
+                      label: const Text('Hubungi via WhatsApp', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                    ),
+                  ),
                 const SizedBox(height: 8),
               ],
             ),
