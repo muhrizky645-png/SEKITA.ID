@@ -61,7 +61,7 @@ class _AkunScreenState extends State<AkunScreen> {
     await _refresh();
   }
 
-  /// User pembeli yang sudah login menekan "Mode Mitra".
+  /// User pembeli yang sudah login menekan \"Mode Mitra\".
   /// Coba pindah peran via WA; bila belum punya akun mitra -> form Jadi Mitra.
   Future<void> _goMitra() async {
     showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
@@ -598,7 +598,17 @@ class _EditProfilScreenState extends State<_EditProfilScreen> {
     return TextField(
       controller: c,
       keyboardType: keyboard,
-      decoration: InputDecoration(labelText: label, prefixIcon: Icon(ic), border: const OutlineInputBorder()),
+      style: const TextStyle(fontSize: 15, color: kInk),
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(ic, size: 20),
+        filled: true,
+        fillColor: const Color(0xFFF7F8FA),
+        floatingLabelStyle: const TextStyle(color: kBrand),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _line)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _line)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: kBrand, width: 1.5)),
+      ),
     );
   }
 }
