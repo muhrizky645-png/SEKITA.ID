@@ -7,6 +7,9 @@ import 'kebutuhan.dart';
 import 'post.dart';
 import 'akun.dart';
 import 'mitra.dart';
+import 'riwayat.dart';
+import 'toko.dart';
+import 'notif_bell.dart';
 import 'notif.dart';
 
 Future<void> main() async {
@@ -39,7 +42,7 @@ class RootNav extends StatefulWidget {
 class _RootNavState extends State<RootNav> {
   // Mode pembeli: 0=Beranda 1=Cari 2=Posting(FAB) 3=Kebutuhan 4=Akun
   int _i = 0;
-  // Mode mitra: 0=Lead 1=Akun Mitra
+  // Mode mitra: 0=Lead 1=Riwayat 2=Toko 3=Akun Mitra
   int _mi = 0;
 
   @override
@@ -47,6 +50,7 @@ class _RootNavState extends State<RootNav> {
     super.initState();
     Notif.setOnOpen(_onNotifOpen);
     Api.mode.addListener(_onMode);
+    mitraTab.addListener(_onMitraTab);
     _restore();
   }
 
@@ -62,17 +66,21 @@ class _RootNavState extends State<RootNav> {
     if (mounted) setState(() {});
   }
 
+  // Lonceng / pindah tab mitra dari mana saja.
+  void _onMitraTab() {
+    if (!mounted) return;
+    setState(() => _mi = mitraTab.value);
+  }
+
   // Tap notifikasi lead -> pastikan tab Lead aktif (mode mitra).
   void _onNotifOpen(Map<String, dynamic> data) {
     if (!mounted) return;
     if (Api.mode.value == 'mitra') {
-      setState(() => _mi = 0);
+      mitraTab.value = 0;
     }
   }
 
   // Sinkronkan tag OneSignal sesuai peran aktif.
-  // Mitra -> role=mitra + cat_<slug> (lead). Pembeli/tamu -> role=pembeli (promo).
-  // Izin notif diminta di kedua mode agar promo & lead sama-sama bisa sampai.
   Future<void> _syncNotifTags() async {
     await Notif.requestPermission();
     if (Api.mode.value == 'mitra') {
@@ -85,6 +93,7 @@ class _RootNavState extends State<RootNav> {
   @override
   void dispose() {
     Api.mode.removeListener(_onMode);
+    mitraTab.removeListener(_onMitraTab);
     Notif.clearOnOpen();
     super.dispose();
   }
@@ -122,22 +131,29 @@ class _RootNavState extends State<RootNav> {
   }
 
   Widget _buildMitra() {
-    final pages = [const LeadScreen(), const AkunMitraScreen()];
+    final pages = const [
+      LeadScreen(),
+      RiwayatKontakScreen(),
+      TokoScreen(),
+      AkunMitraScreen(),
+    ];
     return Scaffold(
       body: IndexedStack(index: _mi, children: pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _mi,
-        onDestinationSelected: (v) => setState(() => _mi = v),
+        onDestinationSelected: (v) => mitraTab.value = v,
         destinations: const [
           NavigationDestination(icon: Icon(Icons.work_outline), selectedIcon: Icon(Icons.work), label: 'Lead'),
-          NavigationDestination(icon: Icon(Icons.storefront_outlined), selectedIcon: Icon(Icons.storefront), label: 'Akun Mitra'),
+          NavigationDestination(icon: Icon(Icons.history), selectedIcon: Icon(Icons.history), label: 'Riwayat'),
+          NavigationDestination(icon: Icon(Icons.storefront_outlined), selectedIcon: Icon(Icons.storefront), label: 'Toko'),
+          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Akun'),
         ],
       ),
     );
   }
 }
 
-// ── FAB tengah (tombol Posting) ─ disembunyikan dengan animasi saat di tab Posting ─
+// -- FAB tengah (tombol Posting) - disembunyikan dengan animasi saat di tab Posting --
 class _PostingFab extends StatelessWidget {
   final bool hidden;
   final VoidCallback onTap;
@@ -183,7 +199,7 @@ class _PostingFab extends StatelessWidget {
   }
 }
 
-// ── Bottom bar dengan notch ──────────────────────────
+// -- Bottom bar dengan notch --
 class _BottomBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelect;
@@ -202,7 +218,6 @@ class _BottomBar extends StatelessWidget {
           children: [
             _item(Icons.home_outlined, Icons.home, 'Beranda', 0),
             _item(Icons.search_outlined, Icons.search, 'Cari', 1),
-            // ruang + label FAB
             Expanded(
               child: InkWell(
                 onTap: () => onSelect(2),
@@ -239,8 +254,7 @@ class _BottomBar extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(sel ? selIcon : icon,
-                color: sel ? kBrand : Colors.grey[600], size: 24),
+            Icon(sel ? selIcon : icon, color: sel ? kBrand : Colors.grey[600], size: 24),
             const SizedBox(height: 2),
             Text(
               label,
