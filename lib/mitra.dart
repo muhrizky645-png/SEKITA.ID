@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'api.dart';
 import 'core.dart';
@@ -10,6 +11,61 @@ const String _adminWa = '089607620368';
 const Color _muted = Color(0xFF64748B);
 const Color _line = Color(0xFFE8ECF3);
 const Color _green = Color(0xFF16A34A);
+
+/// URL ikon kategori dari web (selaras dengan assets/img/cat di situs).
+String catIconUrl(String cat) {
+  const m = {
+    'Terapis': 'terapis.png',
+    'Tukang': 'tukang.png',
+    'Transportasi': 'transportasi.png',
+    'Servis AC': 'ac.png',
+    'Kebersihan': 'kebersihan.png',
+    'Les Privat': 'les.png',
+    'Fotografer': 'foto.png',
+    'MUA': 'mua.png',
+    'Lainnya': 'lainnya.png',
+  };
+  final f = m[cat] ?? 'lainnya.png';
+  return 'https://sekita.id/assets/img/cat/$f';
+}
+
+/// Avatar untuk kartu lead: foto pelanggan bila ada, jika tidak pakai ikon
+/// kategori dari web, dan terakhir fallback emoji bawaan kebutuhan.
+Widget leadAvatar(Kebutuhan k, {double size = 40}) {
+  Widget catBox() {
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: kBg, borderRadius: BorderRadius.circular(10)),
+      child: Image.network(
+        catIconUrl(k.cat),
+        width: size * 0.6,
+        height: size * 0.6,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => Text(k.ic.isNotEmpty ? k.ic : '\u{1F4DD}', style: TextStyle(fontSize: size * 0.5)),
+      ),
+    );
+  }
+
+  final av = k.pembeliAvatar.trim();
+  if (av.startsWith('http://') || av.startsWith('https://')) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Image.network(av, width: size, height: size, fit: BoxFit.cover, errorBuilder: (_, __, ___) => catBox()),
+    );
+  }
+  if (av.startsWith('data:image')) {
+    try {
+      final bytes = base64Decode(av.substring(av.indexOf(',') + 1));
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Image.memory(bytes, width: size, height: size, fit: BoxFit.cover),
+      );
+    } catch (_) {}
+  }
+  return catBox();
+}
 
 /// Kartu putih membungkus daftar baris menu (dengan pemisah tipis).
 Widget _menuCard(List<Widget> rows) {
@@ -307,13 +363,7 @@ class _LeadCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(color: kBg, borderRadius: BorderRadius.circular(10)),
-                child: Text(k.ic.isNotEmpty ? k.ic : '\u{1F4DD}', style: const TextStyle(fontSize: 20)),
-              ),
+              leadAvatar(k),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -351,8 +401,8 @@ class _LeadCard extends StatelessWidget {
               FilledButton.icon(
                 onPressed: onHubungi,
                 style: FilledButton.styleFrom(backgroundColor: _green),
-                icon: const Icon(Icons.chat_outlined, size: 18),
-                label: const Text('Hubungi'),
+                icon: Image.asset('assets/img/wa.png', width: 18, height: 18, errorBuilder: (_, __, ___) => const Icon(Icons.chat_outlined, size: 18)),
+                label: const Text('WhatsApp'),
               ),
             ],
           ),
