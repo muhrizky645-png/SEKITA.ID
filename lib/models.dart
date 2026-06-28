@@ -113,6 +113,7 @@ class Kebutuhan {
   final int ts;
   final String pembeliNama;
   final String pembeliId;
+  final String pembeliAvatar;
   final String wa;
   final List<KontakMitra> contactedBy;
   final int contactedCount;
@@ -131,6 +132,7 @@ class Kebutuhan {
     required this.ts,
     required this.pembeliNama,
     required this.pembeliId,
+    required this.pembeliAvatar,
     required this.wa,
     required this.contactedBy,
     required this.contactedCount,
@@ -143,6 +145,7 @@ class Kebutuhan {
     final p = j['pembeli'];
     final nama = (p is Map && p['nama'] != null) ? '${p['nama']}' : '';
     final pid = (p is Map && p['id'] != null) ? '${p['id']}' : '';
+    final avatar = (p is Map && p['avatar'] != null) ? '${p['avatar']}' : '';
     final cb = j['contactedBy'];
     final contacts = cb is List
         ? cb.map((e) => KontakMitra.fromJson(e as Map<String, dynamic>)).toList()
@@ -161,6 +164,7 @@ class Kebutuhan {
       ts: toI(j['ts']),
       pembeliNama: nama,
       pembeliId: pid,
+      pembeliAvatar: avatar,
       wa: '${j['wa'] ?? ''}',
       contactedBy: contacts,
       contactedCount: contacts.length,
