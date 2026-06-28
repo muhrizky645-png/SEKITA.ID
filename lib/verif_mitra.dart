@@ -78,9 +78,36 @@ class _VerifApi {
   }
 }
 
-Future<String?> _pickImageDataUrl() async {
+Future<ImageSource?> _pickSourceSheet(BuildContext context) {
+  return showModalBottomSheet<ImageSource>(
+    context: context,
+    builder: (ctx) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 8),
+          Container(width: 40, height: 4, decoration: BoxDecoration(color: _line, borderRadius: BorderRadius.circular(2))),
+          const SizedBox(height: 10),
+          ListTile(
+            leading: const Icon(Icons.photo_camera_outlined, color: kBrand),
+            title: const Text('Ambil dari Kamera'),
+            onTap: () => Navigator.pop(ctx, ImageSource.camera),
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_library_outlined, color: kBrand),
+            title: const Text('Pilih dari Galeri'),
+            onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+          ),
+          const SizedBox(height: 10),
+        ],
+      ),
+    ),
+  );
+}
+
+Future<String?> _pickImageDataUrl(ImageSource source) async {
   try {
-    final x = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 900, maxHeight: 900, imageQuality: 68);
+    final x = await ImagePicker().pickImage(source: source, maxWidth: 1280, maxHeight: 1280, imageQuality: 70);
     if (x == null) return null;
     final bytes = await x.readAsBytes();
     return 'data:image/jpeg;base64,${base64Encode(bytes)}';
@@ -258,73 +285,33 @@ class _VerifikasiMitraScreenState extends State<VerifikasiMitraScreen> {
   }
 
   Future<void> _uploadKtp() async {
-    final selfie = ValueNotifier<String>('');
-    final ktp = ValueNotifier<String>('');
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Foto Diri & KTP'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _DocSlot(label: '1. Foto diri (selfie, wajah jelas)', value: selfie),
-              const SizedBox(height: 10),
-              _DocSlot(label: '2. Foto KTP (tulisan terbaca)', value: ktp),
-              const SizedBox(height: 8),
-              const Text('Foto ditinjau admin sebelum disetujui. Pastikan tidak buram.', style: TextStyle(color: _muted, fontSize: 12)),
-            ],
-          ),
+    final res = await Navigator.push<List<String>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const _DocUploadPage(
+          title: 'Foto Diri & KTP',
+          labels: ['1. Foto diri (selfie, wajah jelas)', '2. Foto KTP (tulisan terbaca)'],
+          help: 'Foto ditinjau admin sebelum disetujui. Pastikan tidak buram dan tulisan KTP terbaca.',
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
-          ValueListenableBuilder<String>(
-            valueListenable: selfie,
-            builder: (_, sv, __) => ValueListenableBuilder<String>(
-              valueListenable: ktp,
-              builder: (_, kv, __) => FilledButton(
-                onPressed: (sv.isNotEmpty && kv.isNotEmpty) ? () => Navigator.pop(ctx, true) : null,
-                child: const Text('Ajukan'),
-              ),
-            ),
-          ),
-        ],
       ),
     );
-    if (ok != true) return;
-    await _submitDoc('ktp', jsonEncode({'selfie': selfie.value, 'ktp': ktp.value}));
+    if (res == null || res.length < 2 || res[0].isEmpty || res[1].isEmpty) return;
+    await _submitDoc('ktp', jsonEncode({'selfie': res[0], 'ktp': res[1]}));
   }
 
   Future<void> _uploadIzin() async {
-    final docV = ValueNotifier<String>('');
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Surat Izin Usaha'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _DocSlot(label: 'Foto dokumen izin usaha', value: docV),
-              const SizedBox(height: 8),
-              const Text('Mis. NIB, SIUP, surat keterangan usaha, atau foto tempat usaha. Ditinjau admin.', style: TextStyle(color: _muted, fontSize: 12)),
-            ],
-          ),
+    final res = await Navigator.push<List<String>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const _DocUploadPage(
+          title: 'Surat Izin Usaha',
+          labels: ['Foto dokumen izin usaha'],
+          help: 'Mis. NIB, SIUP, surat keterangan usaha, atau foto tempat usaha. Ditinjau admin.',
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
-          ValueListenableBuilder<String>(
-            valueListenable: docV,
-            builder: (_, v, __) => FilledButton(
-              onPressed: v.isNotEmpty ? () => Navigator.pop(ctx, true) : null,
-              child: const Text('Ajukan'),
-            ),
-          ),
-        ],
       ),
     );
-    if (ok != true) return;
-    await _submitDoc('izin', docV.value);
+    if (res == null || res.isEmpty || res[0].isEmpty) return;
+    await _submitDoc('izin', res[0]);
   }
 
   @override
@@ -561,6 +548,83 @@ class _VerifikasiMitraScreenState extends State<VerifikasiMitraScreen> {
   }
 }
 
+class _DocUploadPage extends StatefulWidget {
+  final String title;
+  final List<String> labels;
+  final String help;
+  const _DocUploadPage({required this.title, required this.labels, required this.help});
+  @override
+  State<_DocUploadPage> createState() => _DocUploadPageState();
+}
+
+class _DocUploadPageState extends State<_DocUploadPage> {
+  late final List<ValueNotifier<String>> _vals;
+
+  @override
+  void initState() {
+    super.initState();
+    _vals = widget.labels.map((_) => ValueNotifier<String>('')).toList();
+  }
+
+  @override
+  void dispose() {
+    for (final v in _vals) {
+      v.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: kBg,
+      appBar: AppBar(title: Text(widget.title)),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          for (int i = 0; i < widget.labels.length; i++) ...[
+            _DocSlot(label: widget.labels[i], value: _vals[i]),
+            const SizedBox(height: 16),
+          ],
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(12)),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.info_outline, color: kBrand, size: 18),
+                const SizedBox(width: 8),
+                Expanded(child: Text(widget.help, style: const TextStyle(color: _muted, fontSize: 12.5, height: 1.4))),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: AnimatedBuilder(
+            animation: Listenable.merge(_vals),
+            builder: (_, __) {
+              final ready = _vals.every((v) => v.value.isNotEmpty);
+              return SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: FilledButton.icon(
+                  onPressed: ready ? () => Navigator.pop(context, _vals.map((v) => v.value).toList()) : null,
+                  icon: const Icon(Icons.send_outlined, size: 18),
+                  label: const Text('Ajukan untuk Ditinjau'),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _DocSlot extends StatelessWidget {
   final String label;
   final ValueNotifier<String> value;
@@ -571,34 +635,41 @@ class _DocSlot extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: kInk)),
-        const SizedBox(height: 6),
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: kInk)),
+        const SizedBox(height: 8),
         ValueListenableBuilder<String>(
           valueListenable: value,
           builder: (_, v, __) {
             final img = _dataUrlImage(v);
             return Column(
               children: [
-                Container(
-                  height: 120,
-                  width: double.infinity,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: BoxDecoration(color: kBg, borderRadius: BorderRadius.circular(10), border: Border.all(color: _line)),
-                  alignment: Alignment.center,
-                  child: img != null
-                      ? Image(image: img, height: 120, width: double.infinity, fit: BoxFit.cover)
-                      : const Text('Belum ada foto', style: TextStyle(color: _muted, fontSize: 12)),
+                GestureDetector(
+                  onTap: () => _pick(context),
+                  child: Container(
+                    height: 170,
+                    width: double.infinity,
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: _line)),
+                    alignment: Alignment.center,
+                    child: img != null
+                        ? Image(image: img, height: 170, width: double.infinity, fit: BoxFit.cover)
+                        : Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.add_a_photo_outlined, color: _muted, size: 28),
+                              SizedBox(height: 6),
+                              Text('Ketuk untuk ambil foto', style: TextStyle(color: _muted, fontSize: 12.5)),
+                            ],
+                          ),
+                  ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () async {
-                      final d = await _pickImageDataUrl();
-                      if (d != null) value.value = d;
-                    },
-                    icon: const Icon(Icons.photo_camera_outlined, size: 18),
-                    label: Text(v.isEmpty ? 'Pilih Foto' : 'Ganti Foto'),
+                    onPressed: () => _pick(context),
+                    icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+                    label: Text(v.isEmpty ? 'Pilih Foto (Kamera / Galeri)' : 'Ganti Foto'),
                   ),
                 ),
               ],
@@ -607,5 +678,12 @@ class _DocSlot extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _pick(BuildContext context) async {
+    final src = await _pickSourceSheet(context);
+    if (src == null) return;
+    final d = await _pickImageDataUrl(src);
+    if (d != null) value.value = d;
   }
 }
