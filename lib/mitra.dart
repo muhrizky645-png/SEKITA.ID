@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'api.dart';
 import 'core.dart';
 import 'models.dart';
+import 'verif_mitra.dart';
 
 const String _adminWa = '089607620368';
 const Color _muted = Color(0xFF64748B);
@@ -810,119 +811,6 @@ class _MitraLoginScreenState extends State<MitraLoginScreen> {
             onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const JadiMitraScreen())),
             child: const Text('Belum punya akun mitra? Daftar'),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-// =================== VERIFIKASI MITRA ===================
-
-/// Halaman tingkatkan verifikasi mitra. Verifikasi diproses MANUAL oleh admin
-/// lewat WhatsApp (kirim dokumen) lalu admin menaikkan tier di server. Tidak
-/// butuh endpoint backend baru — cukup buka WA admin dengan pesan ber-template.
-class VerifikasiMitraScreen extends StatelessWidget {
-  const VerifikasiMitraScreen({super.key});
-
-  void _ajukan(VerifTier target) {
-    final m = Api.currentMitra;
-    final nama = m?.displayName ?? '';
-    openWa(
-      _adminWa,
-      text: 'Halo admin Sekita, saya mitra \"$nama\" ingin mengajukan verifikasi tingkat ${target.label}. Dokumen apa saja yang perlu saya kirim?',
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final m = Api.currentMitra;
-    final current = m?.verified ?? 0;
-    return Scaffold(
-      backgroundColor: kBg,
-      appBar: AppBar(title: const Text('Verifikasi Mitra')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: kBrand.withOpacity(0.08), borderRadius: BorderRadius.circular(16)),
-            child: const Text(
-              'Makin tinggi tingkat verifikasi, makin dipercaya pelanggan dan makin sering profilmu muncul. Verifikasi diproses manual oleh admin lewat WhatsApp.',
-              style: TextStyle(color: kInk, fontSize: 13),
-            ),
-          ),
-          const SizedBox(height: 16),
-          for (final t in kVerifTiers) _tierCard(t, current),
-        ],
-      ),
-    );
-  }
-
-  Widget _tierCard(VerifTier t, int current) {
-    final achieved = current >= t.level;
-    final isNext = t.level == current + 1;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isNext ? t.color : _line, width: isNext ? 1.5 : 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(color: t.color.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
-                child: Icon(
-                  achieved ? Icons.check_circle : (t.level == 0 ? Icons.person_outline : Icons.lock_outline),
-                  color: t.color,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(child: Text(t.label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: kInk))),
-                        if (achieved) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(color: t.color.withOpacity(0.12), borderRadius: BorderRadius.circular(20)),
-                            child: Text('Tercapai', style: TextStyle(color: t.color, fontWeight: FontWeight.w700, fontSize: 11)),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(t.desc, style: const TextStyle(color: _muted, fontSize: 12.5)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (isNext) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () => _ajukan(t),
-                style: FilledButton.styleFrom(backgroundColor: t.color),
-                icon: const Icon(Icons.chat_outlined, size: 18),
-                label: Text('Ajukan ${t.label} via WhatsApp'),
-              ),
-            ),
-          ],
         ],
       ),
     );
