@@ -1050,7 +1050,12 @@ class _AuthScreenState extends State<_AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Masuk / Daftar')),
+      backgroundColor: kBg,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: kInk,
+      ),
       body: _AuthView(onDone: () async {
         if (mounted) Navigator.of(context).pop();
       }),
@@ -1085,15 +1090,30 @@ class _AuthViewState extends State<_AuthView> {
 
   Future<void> _lupaPassword() => showLupaPasswordDialog(context, tipe: 'pembeli');
 
+  void _switchMode(bool login) {
+    if (_busy) return;
+    setState(() {
+      _isLogin = login;
+      _error = null;
+    });
+  }
+
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
     if (_wa.text.trim().isEmpty || _pass.text.isEmpty) {
       setState(() => _error = 'Nomor WhatsApp dan password wajib diisi.');
       return;
     }
-    if (!_isLogin && _nama.text.trim().isEmpty) {
-      setState(() => _error = 'Nama wajib diisi.');
-      return;
+    if (!_isLogin) {
+      if (_nama.text.trim().isEmpty) {
+        setState(() => _error = 'Nama wajib diisi.');
+        return;
+      }
+      final emailReg = _email.text.trim();
+      if (emailReg.isEmpty || !emailReg.contains('@')) {
+        setState(() => _error = 'Email wajib diisi dengan benar.');
+        return;
+      }
     }
     setState(() {
       _busy = true;
@@ -1114,73 +1134,144 @@ class _AuthViewState extends State<_AuthView> {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
       children: [
-        const SizedBox(height: 8),
         Center(
           child: Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(color: kBrand, borderRadius: BorderRadius.circular(18)),
-            child: const Icon(Icons.person, color: Colors.white, size: 34),
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [kBrand, kBrandDark], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [BoxShadow(color: kBrand.withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6))],
+            ),
+            child: const Icon(Icons.handshake_outlined, color: Colors.white, size: 38),
           ),
         ),
         const SizedBox(height: 16),
-        Center(
-          child: Text(_isLogin ? 'Masuk ke akunmu' : 'Buat akun Sekita',
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-        ),
+        const Center(child: Text('Sekita', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 24, color: kInk))),
         const SizedBox(height: 4),
         Center(
-          child: Text('Akun memudahkan kelola postingan & verifikasi',
-              textAlign: TextAlign.center, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+          child: Text(
+            _isLogin ? 'Masuk untuk lanjut ke akunmu' : 'Buat akun untuk mulai pakai Sekita',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: _muted, fontSize: 13.5),
+          ),
         ),
-        const SizedBox(height: 20),
-        SegmentedButton<bool>(
-          segments: const [
-            ButtonSegment(value: true, label: Text('Masuk')),
-            ButtonSegment(value: false, label: Text('Daftar')),
-          ],
-          selected: {_isLogin},
-          onSelectionChanged: (s) => setState(() {
-            _isLogin = s.first;
-            _error = null;
-          }),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(color: const Color(0xFFEFF1F5), borderRadius: BorderRadius.circular(14)),
+          child: Row(
+            children: [
+              _toggleTab('Masuk', true),
+              _toggleTab('Daftar', false),
+            ],
+          ),
         ),
-        const SizedBox(height: 16),
-        if (!_isLogin) ...[
-          _field(_nama, 'Nama lengkap', Icons.person_outline),
-          const SizedBox(height: 12),
-        ],
-        _field(_wa, _isLogin ? 'WhatsApp / Email' : 'Nomor WhatsApp', Icons.phone_outlined,
-            keyboard: TextInputType.text),
-        const SizedBox(height: 12),
-        if (!_isLogin) ...[
-          _field(_email, 'Email (opsional)', Icons.email_outlined, keyboard: TextInputType.emailAddress),
-          const SizedBox(height: 12),
-        ],
-        _field(_pass, 'Password', Icons.lock_outline, obscure: true),
-        if (_isLogin)
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: _busy ? null : _lupaPassword,
-              child: const Text('Lupa kata sandi?'),
+        const SizedBox(height: 22),
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: _line),
+          ),
+          child: Column(
+            children: [
+              if (!_isLogin) ...[
+                _field(_nama, 'Nama lengkap', Icons.person_outline),
+                const SizedBox(height: 14),
+              ],
+              _field(_wa, _isLogin ? 'WhatsApp / Email' : 'Nomor WhatsApp', Icons.phone_outlined, keyboard: TextInputType.text),
+              const SizedBox(height: 14),
+              if (!_isLogin) ...[
+                _field(_email, 'Email', Icons.email_outlined, keyboard: TextInputType.emailAddress),
+                const SizedBox(height: 14),
+              ],
+              _field(_pass, 'Password', Icons.lock_outline, obscure: true),
+              if (_isLogin)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _busy ? null : _lupaPassword,
+                    style: TextButton.styleFrom(foregroundColor: kBrand, padding: const EdgeInsets.symmetric(horizontal: 4)),
+                    child: const Text('Lupa kata sandi?'),
+                  ),
+                ),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: _danger.withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.error_outline, color: _danger, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(_error!, style: const TextStyle(color: _danger, fontSize: 13))),
+                    ],
+                  ),
+                ),
+              ],
+              SizedBox(height: _isLogin ? 6 : 18),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: FilledButton(
+                  onPressed: _busy ? null : _submit,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: kBrand,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: _busy
+                      ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : Text(_isLogin ? 'Masuk' : 'Daftar', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        Center(
+          child: GestureDetector(
+            onTap: () => _switchMode(!_isLogin),
+            child: Text.rich(
+              TextSpan(
+                style: const TextStyle(color: _muted, fontSize: 13.5),
+                children: [
+                  TextSpan(text: _isLogin ? 'Belum punya akun? ' : 'Sudah punya akun? '),
+                  TextSpan(text: _isLogin ? 'Daftar' : 'Masuk', style: const TextStyle(color: kBrand, fontWeight: FontWeight.w800)),
+                ],
+              ),
             ),
           ),
-        if (_error != null) ...[
-          const SizedBox(height: 12),
-          Text(_error!, style: const TextStyle(color: _danger, fontSize: 13)),
-        ],
-        const SizedBox(height: 20),
-        FilledButton(
-          onPressed: _busy ? null : _submit,
-          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-          child: _busy
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : Text(_isLogin ? 'Masuk' : 'Daftar'),
         ),
       ],
+    );
+  }
+
+  Widget _toggleTab(String label, bool loginTab) {
+    final active = _isLogin == loginTab;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _switchMode(loginTab),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          decoration: BoxDecoration(
+            color: active ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(11),
+            boxShadow: active ? [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 6, offset: const Offset(0, 2))] : null,
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: active ? kBrand : _muted),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1189,10 +1280,16 @@ class _AuthViewState extends State<_AuthView> {
       controller: c,
       obscureText: obscure,
       keyboardType: keyboard,
+      style: const TextStyle(fontSize: 15, color: kInk),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(ic),
-        border: const OutlineInputBorder(),
+        prefixIcon: Icon(ic, size: 20),
+        filled: true,
+        fillColor: const Color(0xFFF7F8FA),
+        floatingLabelStyle: const TextStyle(color: kBrand),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _line)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _line)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: kBrand, width: 1.5)),
       ),
     );
   }
