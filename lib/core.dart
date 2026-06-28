@@ -7,9 +7,11 @@ const kBrand = Color(0xFF2563EB);
 const kBrandDark = Color(0xFF1D4ED8);
 const kBg = Color(0xFFF7F8FA);
 const kInk = Color(0xFF111827);
+const kLine = Color(0xFFE8ECF3);
 
 ThemeData buildSekitaTheme() {
   final scheme = ColorScheme.fromSeed(seedColor: kBrand, primary: kBrand);
+  final btnShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(14));
   return ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
@@ -19,6 +21,35 @@ ThemeData buildSekitaTheme() {
       foregroundColor: kInk,
       elevation: 0,
       centerTitle: false,
+    ),
+    // Semua pop-up (AlertDialog) jadi konsisten: sudut membulat, latar putih,
+    // judul tebal. Dialog yang sudah set shape sendiri tetap menimpa ini.
+    dialogTheme: DialogThemeData(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.white,
+      elevation: 6,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      titleTextStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: kInk),
+      contentTextStyle: const TextStyle(fontSize: 14, height: 1.5, color: Color(0xFF475569)),
+    ),
+    // Tombol global membulat (mis. tombol konfirmasi di dialog).
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(shape: btnShape),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(shape: btnShape),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(shape: btnShape),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
   );
 }
@@ -79,7 +110,7 @@ String catIconPath(String c) {
 
 String bannerPath(int n) => 'assets/img/banner/banner-$n.jpg';
 
-// ── Verifikasi mitra (selaras dgn VERIF_TIERS di web) ────────────────────
+// \u2500\u2500 Verifikasi mitra (selaras dgn VERIF_TIERS di web) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 // Level 0 (Pemula/abu-abu) tidak ditampilkan sebagai badge. Hanya 1/2/3.
 class VerifTier {
   final int level;
@@ -107,7 +138,7 @@ VerifTier verifTierFor(int level) {
   return kVerifTiers[l];
 }
 
-// ── Sponsor (selaras dgn sponsorOn & sortPromoted di web) ─────────────
+// \u2500\u2500 Sponsor (selaras dgn sponsorOn & sortPromoted di web) \u2500\u2500\u2500\u2500\u2500
 // 3 paket: 'beranda' (hanya di beranda), 'kategori' (hanya di halaman
 // kategori/cari), 'bundle' (tampil di mana saja). Paket kosong = sponsor lama
 // yang dianggap tampil di mana saja.
