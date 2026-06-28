@@ -166,3 +166,50 @@ class MitraAvatar extends StatelessWidget {
     );
   }
 }
+
+/// Avatar untuk sebuah Kebutuhan/Lead: pakai foto pelanggan bila ada, jika
+/// tidak tampilkan ikon kategori (selaras dengan MitraAvatar & web).
+class KebutuhanAvatar extends StatelessWidget {
+  final Kebutuhan k;
+  const KebutuhanAvatar({super.key, required this.k});
+
+  Widget _catIcon() => Container(
+        color: const Color(0xFFEFF4FF),
+        padding: const EdgeInsets.all(9),
+        child: SekitaImage(catIconPath(k.cat), fit: BoxFit.contain),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final src = k.pembeliAvatar.trim();
+
+    // Tidak ada foto pelanggan -> ikon kategori
+    if (src.isEmpty) return _catIcon();
+
+    // Base64 inline
+    if (src.startsWith('data:image')) {
+      try {
+        final b64 = src.substring(src.indexOf(',') + 1);
+        return Image.memory(base64Decode(b64),
+            fit: BoxFit.cover, gaplessPlayback: true,
+            errorBuilder: (_, __, ___) => _catIcon());
+      } catch (_) {
+        return _catIcon();
+      }
+    }
+
+    // URL biasa/relatif -> normalize lalu load, fallback ke ikon kategori
+    var url = src;
+    if (!url.startsWith('http')) {
+      final host = 'https://' + 'sekita.id/';
+      url = host + url.replaceFirst(RegExp(r'^/'), '');
+    }
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => _catIcon(),
+      loadingBuilder: (c, child, progress) =>
+          progress == null ? child : Container(color: const Color(0xFFE5E7EB)),
+    );
+  }
+}
