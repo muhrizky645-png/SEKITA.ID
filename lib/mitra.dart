@@ -4,6 +4,7 @@ import 'core.dart';
 import 'models.dart';
 import 'verif_mitra.dart';
 import 'lupa_password.dart';
+import 'riwayat_kontak.dart';
 
 const String _adminWa = '089607620368';
 const Color _muted = Color(0xFF64748B);
@@ -610,6 +611,9 @@ class _AkunMitraScreenState extends State<AkunMitraScreen> {
                   _verifCard(context, m),
                   const SizedBox(height: 14),
                   _menuCard([
+                    _MitraRow(Icons.history, kBrand, 'Riwayat Kontak', 'Lead yang sudah kamu hubungi', () async {
+                      await Navigator.push(context, MaterialPageRoute(builder: (_) => const RiwayatKontakScreen()));
+                    }),
                     _MitraRow(Icons.swap_horiz, kBrand, 'Beralih ke Mode Pembeli', 'Cari & posting kebutuhan sebagai pelanggan', _busy ? null : _keMitraPembeli),
                   ]),
                   const SizedBox(height: 14),
