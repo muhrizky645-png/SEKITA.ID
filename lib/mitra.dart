@@ -343,13 +343,22 @@ class _LeadScreenState extends State<LeadScreen> {
   }
 }
 
-class _LeadCard extends StatelessWidget {
+class _LeadCard extends StatefulWidget {
   final Kebutuhan k;
   final VoidCallback onHubungi;
   const _LeadCard({required this.k, required this.onHubungi});
 
   @override
+  State<_LeadCard> createState() => _LeadCardState();
+}
+
+class _LeadCardState extends State<_LeadCard> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final k = widget.k;
+    final hasMore = k.deskripsi.length > 80 || k.waktu.isNotEmpty || k.pembeliNama.isNotEmpty;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -389,9 +398,53 @@ class _LeadCard extends StatelessWidget {
           ],
           if (k.deskripsi.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Text(k.deskripsi, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _muted, fontSize: 13)),
+            Text(
+              k.deskripsi,
+              maxLines: _expanded ? null : 2,
+              overflow: _expanded ? TextOverflow.visible : TextOverflow.ellipsis,
+              style: const TextStyle(color: _muted, fontSize: 13),
+            ),
           ],
-          const SizedBox(height: 12),
+          if (_expanded) ...[
+            if (k.waktu.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.schedule, size: 16, color: _muted),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text('Dibutuhkan: ${k.waktu}', style: const TextStyle(color: kInk, fontSize: 13))),
+                ],
+              ),
+            ],
+            if (k.pembeliNama.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.person_outline, size: 16, color: _muted),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text('Pelanggan: ${k.pembeliNama}', style: const TextStyle(color: kInk, fontSize: 13))),
+                ],
+              ),
+            ],
+          ],
+          if (hasMore) ...[
+            const SizedBox(height: 2),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: () => setState(() => _expanded = !_expanded),
+                style: TextButton.styleFrom(
+                  foregroundColor: kBrand,
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(0, 32),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(_expanded ? 'Ringkas' : 'Selengkapnya', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
           Row(
             children: [
               const Icon(Icons.people_outline, size: 16, color: _muted),
@@ -399,7 +452,7 @@ class _LeadCard extends StatelessWidget {
               Text('${k.contactedCount}/7 penawar', style: const TextStyle(color: _muted, fontSize: 12.5)),
               const Spacer(),
               FilledButton.icon(
-                onPressed: onHubungi,
+                onPressed: widget.onHubungi,
                 style: FilledButton.styleFrom(backgroundColor: _green),
                 icon: Image.asset('assets/img/wa.png', width: 18, height: 18, errorBuilder: (_, __, ___) => const Icon(Icons.chat_outlined, size: 18)),
                 label: const Text('WhatsApp'),
