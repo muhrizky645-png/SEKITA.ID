@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'api.dart';
 import 'core.dart';
@@ -84,6 +85,206 @@ Widget _waBigIcon() => Image.asset(
       height: 54,
       errorBuilder: (_, __, ___) => const Icon(Icons.chat, size: 54, color: _green),
     );
+
+// =================== LAPORKAN (lapor ke admin) ===================
+
+/// Alasan laporan (samakan dengan web).
+const List<String> _laporReasons = [
+  'Penipuan / mencurigakan',
+  'Spam / iklan',
+  'Kontak salah',
+  'Konten tidak pantas',
+  'Lainnya',
+];
+
+/// Kirim laporan kebutuhan ke admin (POST lapor-tambah.php, sama seperti web).
+Future<bool> _kirimLaporan({
+  required String kebutuhanId,
+  required String title,
+  required String alasan,
+  required String catatan,
+  required String pelapor,
+}) async {
+  try {
+    final r = await Net.postJson('${Api.base}/lapor-tambah.php', {
+      'kebutuhan_id': kebutuhanId,
+      'kebutuhan_title': title,
+      'alasan': alasan,
+      'catatan': catatan,
+      'pelapor': pelapor,
+      'device_id': Api.deviceId,
+    });
+    final j = jsonDecode(r.body);
+    return j is Map && j['ok'] == true;
+  } catch (_) {
+    return false;
+  }
+}
+
+/// Buka sheet laporan untuk satu kebutuhan/lead.
+void _showLaporSheet(BuildContext context, Kebutuhan k) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) => _LaporSheet(k: k),
+  );
+}
+
+class _LaporSheet extends StatefulWidget {
+  final Kebutuhan k;
+  const _LaporSheet({required this.k});
+  @override
+  State<_LaporSheet> createState() => _LaporSheetState();
+}
+
+class _LaporSheetState extends State<_LaporSheet> {
+  String? _alasan;
+  final _catatan = TextEditingController();
+  bool _busy = false;
+  String _err = '';
+  bool _ok = false;
+
+  @override
+  void dispose() {
+    _catatan.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    if (_alasan == null) {
+      setState(() => _err = 'Pilih alasan laporan dulu ya.');
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _err = '';
+    });
+    final pelapor = Api.currentMitra?.displayName ?? Api.currentUser?.nama ?? '';
+    final ok = await _kirimLaporan(
+      kebutuhanId: widget.k.id,
+      title: widget.k.title,
+      alasan: _alasan!,
+      catatan: _catatan.text.trim(),
+      pelapor: pelapor,
+    );
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (!ok) {
+      setState(() => _err = 'Gagal mengirim. Coba lagi.');
+      return;
+    }
+    setState(() => _ok = true);
+    await Future.delayed(const Duration(milliseconds: 1200));
+    if (mounted) Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(left: 20, right: 20, top: 12, bottom: MediaQuery.of(context).viewInsets.bottom + 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(color: const Color(0xFFE5E7EB), borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('\u2757 Lapor ke Admin', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: kInk)),
+            const SizedBox(height: 6),
+            Text(
+              widget.k.title.isNotEmpty ? 'Laporkan: \"${widget.k.title}\"' : 'Laporkan kebutuhan ini ke admin Sekita.',
+              style: const TextStyle(color: _muted, fontSize: 13),
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _laporReasons.map((r) {
+                final sel = _alasan == r;
+                return ChoiceChip(
+                  label: Text(r),
+                  selected: sel,
+                  onSelected: _busy ? null : (_) => setState(() {
+                    _alasan = r;
+                    _err = '';
+                  }),
+                  selectedColor: const Color(0xFFFEF2F2),
+                  backgroundColor: Colors.white,
+                  showCheckmark: false,
+                  labelStyle: TextStyle(color: sel ? const Color(0xFFB91C1C) : const Color(0xFF475569), fontWeight: FontWeight.w700, fontSize: 12.5),
+                  side: BorderSide(color: sel ? const Color(0xFFDC2626) : const Color(0xFFE2E8F0)),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _catatan,
+              enabled: !_busy,
+              maxLines: 3,
+              style: const TextStyle(fontSize: 14, color: kInk),
+              decoration: InputDecoration(
+                hintText: 'Catatan tambahan (opsional)\u2026',
+                filled: true,
+                fillColor: const Color(0xFFF7F8FA),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _line)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _line)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kBrand, width: 1.5)),
+              ),
+            ),
+            if (_err.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(_err, style: const TextStyle(color: Color(0xFFDC2626), fontSize: 13, fontWeight: FontWeight.w600)),
+            ],
+            if (_ok) ...[
+              const SizedBox(height: 8),
+              const Text('\u2705 Laporan terkirim. Terima kasih! Admin akan meninjau.', style: TextStyle(color: _green, fontSize: 13, fontWeight: FontWeight.w700)),
+            ],
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: _busy ? null : () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    backgroundColor: const Color(0xFFF1F5F9),
+                    foregroundColor: const Color(0xFF475569),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w700)),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: (_busy || _ok) ? null : _send,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFDC2626),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: _busy
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Text('Kirim Laporan', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 /// Kartu putih membungkus daftar baris menu (dengan pemisah tipis).
 Widget _menuCard(List<Widget> rows) {
@@ -195,7 +396,7 @@ class _LeadScreenState extends State<LeadScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => _LeadDetailSheet(k: k, onHubungi: () => _hubungi(k)),
+      builder: (_) => _LeadDetailSheet(k: k, onHubungi: () => _hubungi(k), onLapor: () => _showLaporSheet(context, k)),
     );
   }
 
@@ -483,7 +684,8 @@ class _LeadCard extends StatelessWidget {
 class _LeadDetailSheet extends StatelessWidget {
   final Kebutuhan k;
   final VoidCallback onHubungi;
-  const _LeadDetailSheet({required this.k, required this.onHubungi});
+  final VoidCallback onLapor;
+  const _LeadDetailSheet({required this.k, required this.onHubungi, required this.onLapor});
 
   Widget _row(IconData ic, String t) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
@@ -619,6 +821,17 @@ class _LeadDetailSheet extends StatelessWidget {
                       label: const Text('Hubungi via WhatsApp', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                     ),
                   ),
+                const SizedBox(height: 4),
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      onLapor();
+                    },
+                    icon: const Icon(Icons.flag_outlined, size: 18, color: _muted),
+                    label: const Text('Laporkan kebutuhan ini', style: TextStyle(color: _muted, fontSize: 13)),
+                  ),
+                ),
                 const SizedBox(height: 8),
               ],
             ),
