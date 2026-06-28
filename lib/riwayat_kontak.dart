@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'api.dart';
 import 'core.dart';
 import 'models.dart';
+import 'widgets.dart';
 
 const Color _muted = Color(0xFF64748B);
 const Color _line = Color(0xFFE8ECF3);
@@ -140,12 +141,9 @@ class _RiwayatCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(color: kBg, borderRadius: BorderRadius.circular(10)),
-                child: Text(k.ic.isNotEmpty ? k.ic : '\u{1F4DD}', style: const TextStyle(fontSize: 20)),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(width: 44, height: 44, child: KebutuhanAvatar(k: k)),
               ),
               const SizedBox(width: 12),
               Expanded(
