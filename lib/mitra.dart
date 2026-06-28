@@ -3,6 +3,7 @@ import 'api.dart';
 import 'core.dart';
 import 'models.dart';
 import 'verif_mitra.dart';
+import 'lupa_password.dart';
 
 const String _adminWa = '089607620368';
 const Color _muted = Color(0xFF64748B);
@@ -816,6 +817,8 @@ class _MitraLoginScreenState extends State<MitraLoginScreen> {
     super.dispose();
   }
 
+  Future<void> _lupaPassword() => showLupaPasswordDialog(context, tipe: 'mitra');
+
   Future<void> _submit() async {
     if (_idf.text.trim().isEmpty || _pass.text.isEmpty) {
       setState(() => _error = 'Isi nomor WhatsApp dan password.');
@@ -854,6 +857,13 @@ class _MitraLoginScreenState extends State<MitraLoginScreen> {
             controller: _pass,
             obscureText: true,
             decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline), border: OutlineInputBorder()),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: _busy ? null : _lupaPassword,
+              child: const Text('Lupa kata sandi?'),
+            ),
           ),
           if (_error.isNotEmpty) ...[
             const SizedBox(height: 12),
