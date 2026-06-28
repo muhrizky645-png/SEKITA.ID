@@ -684,6 +684,11 @@ class _JadiMitraScreenState extends State<JadiMitraScreen> {
       setState(() => _error = 'Nomor WhatsApp wajib diisi.');
       return;
     }
+    final email = _email.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _error = 'Email wajib diisi dengan benar.');
+      return;
+    }
     if (!_upgrade && _pass.text.length < 6) {
       setState(() => _error = 'Password minimal 6 karakter.');
       return;
@@ -745,7 +750,16 @@ class _JadiMitraScreenState extends State<JadiMitraScreen> {
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             value: _kategori,
-            decoration: const InputDecoration(labelText: 'Kategori', prefixIcon: Icon(Icons.category_outlined), border: OutlineInputBorder()),
+            decoration: InputDecoration(
+              labelText: 'Kategori',
+              prefixIcon: const Icon(Icons.category_outlined, size: 20),
+              filled: true,
+              fillColor: const Color(0xFFF7F8FA),
+              floatingLabelStyle: const TextStyle(color: kBrand),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _line)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _line)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: kBrand, width: 1.5)),
+            ),
             items: Api.kategoriDasar.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
             onChanged: (v) => setState(() => _kategori = v ?? _kategori),
           ),
@@ -758,7 +772,7 @@ class _JadiMitraScreenState extends State<JadiMitraScreen> {
             const Text('Nomor mengikuti akun yang sedang login.', style: TextStyle(color: _muted, fontSize: 12)),
           ],
           const SizedBox(height: 12),
-          _field(_email, 'Email (opsional)', Icons.mail_outline, keyboard: TextInputType.emailAddress),
+          _field(_email, 'Email', Icons.mail_outline, keyboard: TextInputType.emailAddress),
           const SizedBox(height: 12),
           _field(_deskripsi, 'Deskripsi layanan', Icons.notes_outlined, maxLines: 3),
           if (!_upgrade) ...[
@@ -767,16 +781,30 @@ class _JadiMitraScreenState extends State<JadiMitraScreen> {
           ],
           if (_error.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text(_error, style: const TextStyle(color: Color(0xFFDC2626), fontSize: 13)),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: const Color(0xFFDC2626).withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(_error, style: const TextStyle(color: Color(0xFFDC2626), fontSize: 13))),
+                ],
+              ),
+            ),
           ],
           const SizedBox(height: 20),
           SizedBox(
-            height: 50,
+            width: double.infinity,
+            height: 52,
             child: FilledButton(
               onPressed: _busy ? null : _submit,
+              style: FilledButton.styleFrom(backgroundColor: kBrand, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
               child: _busy
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Text('Daftar Jadi Mitra'),
+                  ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('Daftar Jadi Mitra', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
             ),
           ),
         ],
@@ -791,7 +819,18 @@ class _JadiMitraScreenState extends State<JadiMitraScreen> {
       keyboardType: keyboard,
       maxLines: obscure ? 1 : maxLines,
       enabled: enabled,
-      decoration: InputDecoration(labelText: label, prefixIcon: Icon(ic), border: const OutlineInputBorder()),
+      style: const TextStyle(fontSize: 15, color: kInk),
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(ic, size: 20),
+        filled: true,
+        fillColor: enabled ? const Color(0xFFF7F8FA) : const Color(0xFFEEF1F5),
+        floatingLabelStyle: const TextStyle(color: kBrand),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _line)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _line)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: kBrand, width: 1.5)),
+        disabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _line)),
+      ),
     );
   }
 }
@@ -842,49 +881,115 @@ class _MitraLoginScreenState extends State<MitraLoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
-      appBar: AppBar(title: const Text('Masuk Mitra')),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: kInk,
+      ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
-          const SizedBox(height: 8),
-          TextField(
-            controller: _idf,
-            keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(labelText: 'Nomor WhatsApp', prefixIcon: Icon(Icons.call_outlined), border: OutlineInputBorder()),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _pass,
-            obscureText: true,
-            decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline), border: OutlineInputBorder()),
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: _busy ? null : _lupaPassword,
-              child: const Text('Lupa kata sandi?'),
+          Center(
+            child: Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [kBrand, kBrandDark], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [BoxShadow(color: kBrand.withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6))],
+              ),
+              child: const Icon(Icons.storefront_outlined, color: Colors.white, size: 38),
             ),
           ),
-          if (_error.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(_error, style: const TextStyle(color: Color(0xFFDC2626), fontSize: 13)),
-          ],
-          const SizedBox(height: 20),
-          SizedBox(
-            height: 50,
-            child: FilledButton(
-              onPressed: _busy ? null : _submit,
-              child: _busy
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Text('Masuk'),
+          const SizedBox(height: 16),
+          const Center(child: Text('Masuk Mitra', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 24, color: kInk))),
+          const SizedBox(height: 4),
+          const Center(
+            child: Text('Masuk untuk kelola lead & usahamu', textAlign: TextAlign.center, style: TextStyle(color: _muted, fontSize: 13.5)),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), border: Border.all(color: _line)),
+            child: Column(
+              children: [
+                _field(_idf, 'Nomor WhatsApp', Icons.call_outlined, keyboard: TextInputType.phone),
+                const SizedBox(height: 14),
+                _field(_pass, 'Password', Icons.lock_outline, obscure: true),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _busy ? null : _lupaPassword,
+                    style: TextButton.styleFrom(foregroundColor: kBrand, padding: const EdgeInsets.symmetric(horizontal: 4)),
+                    child: const Text('Lupa kata sandi?'),
+                  ),
+                ),
+                if (_error.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: const Color(0xFFDC2626).withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(_error, style: const TextStyle(color: Color(0xFFDC2626), fontSize: 13))),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 6),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: FilledButton(
+                    onPressed: _busy ? null : _submit,
+                    style: FilledButton.styleFrom(backgroundColor: kBrand, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                    child: _busy
+                        ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Text('Masuk', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          TextButton(
-            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const JadiMitraScreen())),
-            child: const Text('Belum punya akun mitra? Daftar'),
+          const SizedBox(height: 16),
+          Center(
+            child: GestureDetector(
+              onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const JadiMitraScreen())),
+              child: Text.rich(
+                TextSpan(
+                  style: const TextStyle(color: _muted, fontSize: 13.5),
+                  children: const [
+                    TextSpan(text: 'Belum punya akun mitra? '),
+                    TextSpan(text: 'Daftar', style: TextStyle(color: kBrand, fontWeight: FontWeight.w800)),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _field(TextEditingController c, String label, IconData ic, {bool obscure = false, TextInputType? keyboard}) {
+    return TextField(
+      controller: c,
+      obscureText: obscure,
+      keyboardType: keyboard,
+      style: const TextStyle(fontSize: 15, color: kInk),
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(ic, size: 20),
+        filled: true,
+        fillColor: const Color(0xFFF7F8FA),
+        floatingLabelStyle: const TextStyle(color: kBrand),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _line)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _line)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: kBrand, width: 1.5)),
       ),
     );
   }
