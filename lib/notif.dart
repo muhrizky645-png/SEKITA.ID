@@ -3,7 +3,9 @@ import 'package:onesignal_flutter/onesignal_flutter.dart';
 /// Wrapper tipis untuk push notification OneSignal.
 ///
 /// MVP: device mitra diberi tag `role=mitra` + `cat_<slug>` supaya bisa
-/// menerima notifikasi lead sesuai kategori. Tap notifikasi -> deep-link ke Lead.
+/// menerima notifikasi lead sesuai kategori; device pembeli diberi tag
+/// `role=pembeli` supaya bisa menerima notifikasi promo. Tap notifikasi lead
+/// -> deep-link ke Lead.
 /// Semua pemanggilan dibungkus try/catch agar tidak pernah membuat app crash
 /// meski OneSignal belum siap / device tanpa Google Play Services.
 class Notif {
@@ -72,7 +74,20 @@ class Notif {
     } catch (_) {}
   }
 
-  /// Hapus penanda mitra (mode pembeli / logout).
+  /// Tandai device sebagai pembeli (mode pembeli / tamu / logout) agar bisa
+  /// menerima notifikasi promo. Hapus tag kategori mitra bila sebelumnya ada.
+  static Future<void> setPembeliTags() async {
+    try {
+      if (_lastCatKey != null) {
+        await OneSignal.User.removeTags([_lastCatKey!]);
+        _lastCatKey = null;
+      }
+      await OneSignal.User.addTags(<String, String>{'role': 'pembeli'});
+    } catch (_) {}
+  }
+
+  /// Hapus penanda mitra. Dipertahankan untuk kompatibilitas; mode pembeli
+  /// kini pakai setPembeliTags() agar tetap bisa di-target promo.
   static Future<void> clearMitraTags() async {
     try {
       final keys = <String>['role'];

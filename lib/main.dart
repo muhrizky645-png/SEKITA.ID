@@ -71,12 +71,14 @@ class _RootNavState extends State<RootNav> {
   }
 
   // Sinkronkan tag OneSignal sesuai peran aktif.
+  // Mitra -> role=mitra + cat_<slug> (lead). Pembeli/tamu -> role=pembeli (promo).
+  // Izin notif diminta di kedua mode agar promo & lead sama-sama bisa sampai.
   Future<void> _syncNotifTags() async {
+    await Notif.requestPermission();
     if (Api.mode.value == 'mitra') {
-      await Notif.requestPermission();
       await Notif.setMitraTags(Api.currentMitra?.kategori ?? '');
     } else {
-      await Notif.clearMitraTags();
+      await Notif.setPembeliTags();
     }
   }
 
@@ -181,7 +183,7 @@ class _PostingFab extends StatelessWidget {
   }
 }
 
-// ── Bottom bar dengan notch ──────────────────────────────────
+// ── Bottom bar dengan notch ──────────────────────────
 class _BottomBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelect;
