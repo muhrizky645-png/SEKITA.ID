@@ -5,6 +5,7 @@ import 'api.dart';
 import 'core.dart';
 import 'models.dart';
 import 'mitra.dart';
+import 'lupa_password.dart';
 
 const String _adminWa = '089607620368';
 const Color _line = Color(0xFFE8ECF3);
@@ -1082,6 +1083,8 @@ class _AuthViewState extends State<_AuthView> {
     super.dispose();
   }
 
+  Future<void> _lupaPassword() => showLupaPasswordDialog(context, tipe: 'pembeli');
+
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
     if (_wa.text.trim().isEmpty || _pass.text.isEmpty) {
@@ -1157,6 +1160,14 @@ class _AuthViewState extends State<_AuthView> {
           const SizedBox(height: 12),
         ],
         _field(_pass, 'Password', Icons.lock_outline, obscure: true),
+        if (_isLogin)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: _busy ? null : _lupaPassword,
+              child: const Text('Lupa kata sandi?'),
+            ),
+          ),
         if (_error != null) ...[
           const SizedBox(height: 12),
           Text(_error!, style: const TextStyle(color: _danger, fontSize: 13)),
