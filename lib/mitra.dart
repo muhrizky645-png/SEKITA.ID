@@ -419,6 +419,77 @@ class _AkunMitraScreenState extends State<AkunMitraScreen> {
     if (ok == true) await Api.logout();
   }
 
+  /// Kartu saldo Kontak bergaya dashboard web (Kontak Tersedia + paket).
+  Widget _kontakCard(BuildContext context, MitraAkun m) {
+    final firstName = m.nama.trim().isNotEmpty ? m.nama.trim().split(' ').first : m.displayName;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Hai, $firstName! \u{1F44B}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+                ),
+              ),
+              GestureDetector(
+                onTap: () => _infoKontak(context),
+                child: const Icon(Icons.info_outline, color: Colors.white54, size: 20),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const Text('Kontak Tersedia', style: TextStyle(color: Colors.white70, fontSize: 13)),
+          const SizedBox(height: 2),
+          Text('${m.kuota}', style: const TextStyle(color: Color(0xFF22C55E), fontWeight: FontWeight.w800, fontSize: 40, height: 1.1)),
+          const SizedBox(height: 4),
+          const Text('Semakin banyak kontak, semakin banyak peluang!', style: TextStyle(color: Colors.white70, fontSize: 13)),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: FilledButton(
+              onPressed: _busy ? null : _lihatPaket,
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF0F172A),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Lihat Paket Kontak', style: TextStyle(fontWeight: FontWeight.w800)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _infoKontak(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Tentang Kontak'),
+        content: const Text('1 Kontak terpakai setiap kamu menghubungi pelanggan dari daftar Lead. Menghubungi lead yang sama lagi dalam 24 jam gratis. Isi ulang Kontak lewat admin.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Mengerti')),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _lihatPaket() async {
+    await openWa(_adminWa, text: 'Halo admin Sekita, saya mau lihat paket dan isi ulang saldo Kontak untuk akun mitra ${Api.currentMitra?.displayName ?? ''}.');
+  }
+
   /// Kartu ringkas status verifikasi (tier) + tombol ke halaman tingkatkan.
   Widget _verifCard(BuildContext context, MitraAkun m) {
     final tier = verifTierFor(m.verified);
@@ -501,16 +572,6 @@ class _AkunMitraScreenState extends State<AkunMitraScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Icon(Icons.bolt, color: Colors.white, size: 18),
-                      const SizedBox(width: 6),
-                      Text('${m.kuota} Kontak', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
-                      const SizedBox(width: 8),
-                      const Text('Saldo lead', style: TextStyle(color: Colors.white70, fontSize: 12.5)),
-                    ],
-                  ),
                 ],
               ),
             ),
@@ -518,6 +579,8 @@ class _AkunMitraScreenState extends State<AkunMitraScreen> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
+                  _kontakCard(context, m),
+                  const SizedBox(height: 14),
                   if (m.bisaKlaimPerdana) ...[
                     Container(
                       padding: const EdgeInsets.all(14),
