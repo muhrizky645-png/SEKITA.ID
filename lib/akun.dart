@@ -259,7 +259,7 @@ class _AkunScreenState extends State<AkunScreen> {
               controller: ctrl,
               autofocus: true,
               textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(hintText: 'HAPUS', border: OutlineInputBorder()),
+              decoration: InputDecoration(hintText: 'HAPUS', filled: true, fillColor: const Color(0xFFF7F8FA), border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: _line)), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: _line)), focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: kBrand, width: 1.5))),
               onChanged: (v) => canDelete.value = v.trim().toUpperCase() == 'HAPUS',
             ),
           ],
@@ -663,7 +663,7 @@ class _VerifikasiScreenState extends State<_VerifikasiScreen> {
           children: [
             const Text('Kami mengirim 6 digit kode ke emailmu. Masukkan kode di bawah ini.'),
             const SizedBox(height: 12),
-            TextField(controller: codeC, keyboardType: TextInputType.number, maxLength: 6, decoration: const InputDecoration(labelText: 'Kode OTP', border: OutlineInputBorder())),
+            TextField(controller: codeC, keyboardType: TextInputType.number, maxLength: 6, decoration: InputDecoration(labelText: 'Kode OTP', filled: true, fillColor: const Color(0xFFF7F8FA), floatingLabelStyle: const TextStyle(color: kBrand), border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: _line)), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: _line)), focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: kBrand, width: 1.5)))),
           ],
         ),
         actions: [
