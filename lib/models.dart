@@ -90,13 +90,20 @@ class Ulasan {
 class KontakMitra {
   final String id;
   final String nama;
+  final String wa;
+  final int ts;
 
-  KontakMitra({required this.id, required this.nama});
+  KontakMitra({required this.id, required this.nama, this.wa = '', this.ts = 0});
 
-  factory KontakMitra.fromJson(Map<String, dynamic> j) => KontakMitra(
-        id: '${j['mitraId'] ?? ''}',
-        nama: '${j['nama'] ?? 'Mitra'}',
-      );
+  factory KontakMitra.fromJson(Map<String, dynamic> j) {
+    int toI(dynamic v) => v == null ? 0 : (v is num ? v.toInt() : int.tryParse('$v') ?? 0);
+    return KontakMitra(
+      id: '${j['mitraId'] ?? ''}',
+      nama: '${j['nama'] ?? 'Mitra'}',
+      wa: '${j['wa'] ?? ''}',
+      ts: toI(j['ts']),
+    );
+  }
 }
 
 class Kebutuhan {
