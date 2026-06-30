@@ -25,6 +25,25 @@ bool _outOfCategory(String cat) {
   return _catBase(cat) != _catBase(mine);
 }
 
+/// true jika lead [k] sudah pernah dihubungi mitra ini dalam 24 jam terakhir.
+/// Kontak ulang dalam jendela ini gratis (tidak mengurangi Kontak Tersedia),
+/// sama seperti aturan di web.
+bool _recontactIsFree(Kebutuhan k) {
+  final m = Api.currentMitra;
+  if (m == null) return false;
+  final mid = m.id.toString();
+  final mwa = waNormalize(m.wa);
+  const windowMs = 24 * 60 * 60 * 1000;
+  var last = 0;
+  for (final c in k.contactedBy) {
+    final match = (c.id.isNotEmpty && c.id == mid) ||
+        (mwa.isNotEmpty && c.wa.isNotEmpty && waNormalize(c.wa) == mwa);
+    if (match && c.ts > last) last = c.ts;
+  }
+  if (last == 0) return false;
+  return DateTime.now().millisecondsSinceEpoch - last < windowMs;
+}
+
 /// Popup konfirmasi bergaya web: kartu putih, ikon besar, tombol hijau.
 /// Mengembalikan true bila tombol utama ditekan.
 Future<bool> _waModal(
@@ -413,9 +432,12 @@ class _LeadScreenState extends State<LeadScreen> {
       return;
     }
 
+    // Kontak ulang ke lead yang sama dalam 24 jam: gratis (samakan dengan web).
+    final free = _recontactIsFree(k);
+
     // Saldo Kontak habis -> popup isi ulang (teks & gaya seperti web).
     final saldo = Api.currentMitra?.kuota ?? 0;
-    if (saldo <= 0) {
+    if (!free && saldo <= 0) {
       final go = await _waModal(
         context,
         icon: const Text('\u{1F4ED}', style: TextStyle(fontSize: 46)),
@@ -431,9 +453,11 @@ class _LeadScreenState extends State<LeadScreen> {
     final ok = await _waModal(
       context,
       icon: _waBigIcon(),
-      title: 'Lanjut chat WhatsApp?',
-      body: 'Kalau lanjut, 1 Kontak Tersedia kepakai ya.',
-      go: 'Lanjut buka WhatsApp',
+      title: free ? 'Sudah pernah kamu hubungi' : 'Lanjut chat WhatsApp?',
+      body: free
+          ? 'Nomor ini sudah pernah kamu hubungi dalam 24 jam terakhir. Mau hubungi lagi? Tidak akan mengurangi Kontak Tersedia kamu.'
+          : 'Kalau lanjut, 1 Kontak Tersedia kepakai ya.',
+      go: free ? 'Hubungi lagi' : 'Lanjut buka WhatsApp',
       sec: 'Batal',
     );
     if (!ok) return;
