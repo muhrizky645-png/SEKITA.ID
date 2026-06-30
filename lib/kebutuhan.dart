@@ -65,6 +65,7 @@ class _KebutuhanScreenState extends State<KebutuhanScreen> {
   }
 
   void _setMine(bool v) {
+    if (_mine == v) return;
     _mine = v;
     _load();
   }
@@ -73,23 +74,21 @@ class _KebutuhanScreenState extends State<KebutuhanScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kebutuhan'),
-        actions: [IconButton(onPressed: _load, icon: const Icon(Icons.refresh))],
+        titleSpacing: 16,
+        title: const Text('Kebutuhan',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20)),
+        actions: [
+          IconButton(
+            onPressed: _load,
+            icon: const Icon(Icons.refresh, size: 22),
+            tooltip: 'Muat ulang',
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: SegmentedButton<bool>(
-              segments: const [
-                ButtonSegment(value: false, label: Text('Semua'), icon: Icon(Icons.public, size: 18)),
-                ButtonSegment(value: true, label: Text('Postingan Saya'), icon: Icon(Icons.person_outline, size: 18)),
-              ],
-              selected: {_mine},
-              onSelectionChanged: (s) => _setMine(s.first),
-            ),
-          ),
-          const Divider(height: 1),
+          _filterTabs(),
           Expanded(
             child: RefreshIndicator(
               onRefresh: _refresh,
@@ -100,26 +99,14 @@ class _KebutuhanScreenState extends State<KebutuhanScreen> {
                     return const Center(child: CircularProgressIndicator());
                   }
                   if (snap.hasError) {
-                    return ListView(children: const [
-                      SizedBox(height: 140),
-                      Center(child: Text('Gagal memuat kebutuhan.')),
-                    ]);
+                    return _errorView();
                   }
                   final list = snap.data ?? [];
                   if (list.isEmpty) {
-                    return ListView(children: [
-                      const SizedBox(height: 100),
-                      const Icon(Icons.inbox_outlined, size: 56, color: Colors.grey),
-                      const SizedBox(height: 12),
-                      Center(
-                        child: Text(_mine
-                            ? 'Kamu belum punya postingan.'
-                            : 'Belum ada kebutuhan yang diposting.'),
-                      ),
-                    ]);
+                    return _emptyView();
                   }
                   return ListView(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                     children: list.map((k) => _card(k)).toList(),
                   );
                 },
@@ -127,6 +114,56 @@ class _KebutuhanScreenState extends State<KebutuhanScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _filterTabs() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Row(
+        children: [
+          _tab('Semua', false, Icons.public),
+          _tab('Postingan Saya', true, Icons.person_outline),
+        ],
+      ),
+    );
+  }
+
+  Widget _tab(String label, bool value, IconData ic) {
+    final sel = _mine == value;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _setMine(value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          decoration: BoxDecoration(
+            color: sel ? kBrand : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(ic, size: 16, color: sel ? Colors.white : const Color(0xFF64748B)),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: sel ? Colors.white : const Color(0xFF64748B),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -150,84 +187,140 @@ class _KebutuhanScreenState extends State<KebutuhanScreen> {
     );
   }
 
+  Widget _emptyView() {
+    return ListView(
+      children: [
+        const SizedBox(height: 60),
+        Center(
+          child: Container(
+            width: 72,
+            height: 72,
+            decoration: const BoxDecoration(
+              color: Color(0xFFEFF4FF),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.assignment_outlined, color: kBrand, size: 34),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          _mine ? 'Kamu belum punya postingan' : 'Belum ada kebutuhan',
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+        ),
+        const SizedBox(height: 6),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Text(
+            _mine
+                ? 'Postingan kebutuhan yang kamu buat akan muncul di sini.'
+                : 'Belum ada kebutuhan yang diposting pengguna lain.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13, color: Colors.grey[600], height: 1.5),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _errorView() {
+    return ListView(
+      children: [
+        const SizedBox(height: 80),
+        const Icon(Icons.wifi_off_rounded, size: 56, color: Colors.grey),
+        const SizedBox(height: 12),
+        const Center(child: Text('Gagal memuat kebutuhan. Periksa koneksi internet.')),
+        const SizedBox(height: 12),
+        Center(child: FilledButton(onPressed: _load, child: const Text('Coba lagi'))),
+      ],
+    );
+  }
+
   Widget _card(Kebutuhan k) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: () => _openDetail(k),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox(width: 46, height: 46, child: KebutuhanAvatar(k: k)),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(k.title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                        ),
-                        if (k.isDone)
-                          _statusChip('Selesai', const Color(0xFFDCFCE7), const Color(0xFF166534))
-                        else
-                          _statusChip('Terbuka', const Color(0xFFEFF4FF), kBrand),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${k.cat.isEmpty ? 'Umum' : k.cat} \u00b7 ${k.loc.isEmpty ? '-' : k.loc}',
-                      style: TextStyle(color: Colors.grey[700], fontSize: 12),
-                    ),
-                    if (k.budget.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text('Budget: ${k.budget}',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF166534))),
-                    ],
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(Icons.person_outline, size: 13, color: Colors.grey[500]),
-                        const SizedBox(width: 3),
-                        Flexible(
-                          child: Text(k.pembeliNama.isEmpty ? 'Pengguna' : k.pembeliNama,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                        ),
-                        const SizedBox(width: 8),
-                        Text('\u00b7 ${timeAgo(k.ts)}', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-                      ],
-                    ),
-                    if (k.contactedCount > 0) ...[
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEF3C7),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text('${k.contactedCount} mitra menghubungi',
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFFB45309))),
-                      ),
-                    ],
-                  ],
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _openDetail(k),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(width: 46, height: 46, child: KebutuhanAvatar(k: k)),
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(k.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                          ),
+                          if (k.isDone)
+                            _statusChip('Selesai', const Color(0xFFDCFCE7), const Color(0xFF166534))
+                          else
+                            _statusChip('Terbuka', const Color(0xFFEFF4FF), kBrand),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${k.cat.isEmpty ? 'Umum' : k.cat} \u00b7 ${k.loc.isEmpty ? '-' : k.loc}',
+                        style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                      ),
+                      if (k.budget.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text('Budget: ${k.budget}',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF166534))),
+                      ],
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(Icons.person_outline, size: 13, color: Colors.grey[500]),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(k.pembeliNama.isEmpty ? 'Pengguna' : k.pembeliNama,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                          ),
+                          const SizedBox(width: 8),
+                          Text('\u00b7 ${timeAgo(k.ts)}', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                        ],
+                      ),
+                      if (k.contactedCount > 0) ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text('${k.contactedCount} mitra menghubungi',
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFFB45309))),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(Icons.chevron_right, size: 18, color: Colors.grey[400]),
+              ],
+            ),
           ),
         ),
       ),
@@ -719,8 +812,6 @@ class _ReviewFlowSheetState extends State<_ReviewFlowSheet> {
     super.dispose();
   }
 
-  /// Pra-muat daftar mitra (diam-diam) supaya tile "mitra yang menghubungi"
-  /// bisa langsung tampil dengan foto profil / ikon kategori yang benar.
   Future<void> _preloadMitra() async {
     try {
       final list = await Api.fetchMitra();
@@ -981,7 +1072,7 @@ class _ReviewFlowSheetState extends State<_ReviewFlowSheet> {
 }
 
 // ---------- LAPOR KE ADMIN (mode pembeli) ----------
-// Sama dengan alur "laporkan postingan" di web & mode mitra.
+// Sama dengan alur laporkan postingan di web & mode mitra.
 
 const List<String> _laporReasons = [
   'Penipuan / mencurigakan',
