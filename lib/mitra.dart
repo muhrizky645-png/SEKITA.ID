@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'api.dart';
 import 'core.dart';
 import 'models.dart';
@@ -14,7 +15,7 @@ const Color _line = Color(0xFFE8ECF3);
 const Color _green = Color(0xFF16A34A);
 const int _kMaxMitra = 7;
 
-/// Normalisasi kategori "Lainnya (xxx)" -> "lainnya" untuk pencocokan.
+/// Normalisasi kategori \"Lainnya (xxx)\" -> \"lainnya\" untuk pencocokan.
 String _catBase(String c) => c.split('(').first.trim().toLowerCase();
 
 /// true jika kebutuhan kategori [cat] di luar bidang mitra yang sedang login.
@@ -925,6 +926,13 @@ class _AkunMitraScreenState extends State<AkunMitraScreen> {
     if (ok == true) await Api.logout();
   }
 
+  /// Buka halaman Kebijakan Privasi di web Sekita (sumber tunggal, anti basi).
+  Future<void> _privasi() async {
+    final uri = Uri.parse('https://' 'sekita.id/kebijakan-privasi.html');
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok) _snack('Tidak bisa membuka halaman. Coba lagi.');
+  }
+
   /// Kartu saldo Kontak bergaya dashboard web (Kontak Tersedia + paket).
   Widget _kontakCard(BuildContext context, MitraAkun m) {
     final firstName = m.nama.trim().isNotEmpty ? m.nama.trim().split(' ').first : m.displayName;
@@ -1123,6 +1131,7 @@ class _AkunMitraScreenState extends State<AkunMitraScreen> {
                   const SizedBox(height: 14),
                   _menuCard([
                     _MitraRow(Icons.help_outline, kBrand, 'Hubungi Admin', 'Bantuan, isi ulang Kontak, atau verifikasi', () => openWa(_adminWa, text: 'Halo admin Sekita, saya mitra ${m.displayName}.')),
+                    _MitraRow(Icons.privacy_tip_outlined, kBrand, 'Kebijakan Privasi', 'Cara kami mengelola datamu', _privasi),
                     _MitraRow(Icons.logout, _muted, 'Keluar', 'Keluar dari akun mitra', _logout),
                   ]),
                   const SizedBox(height: 16),
