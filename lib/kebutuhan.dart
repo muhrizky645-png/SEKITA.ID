@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'api.dart';
 import 'core.dart';
@@ -437,6 +438,22 @@ class _DetailSheetState extends State<_DetailSheet> {
                     ],
                   ),
                 ),
+                if (!widget.mine) ...[
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _busy ? null : () => _showLaporSheet(context, widget.k),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFDC2626),
+                        side: const BorderSide(color: Color(0xFFFECACA)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      icon: const Icon(Icons.flag_outlined, size: 18),
+                      label: const Text('Laporkan postingan ini'),
+                    ),
+                  ),
+                ],
                 if (widget.mine) ...[
                   const SizedBox(height: 16),
                   if (!_done)
@@ -957,6 +974,219 @@ class _ReviewFlowSheetState extends State<_ReviewFlowSheet> {
         SizedBox(
           width: double.infinity,
           child: TextButton(onPressed: _busy ? null : () => Navigator.pop(context, false), child: const Text('Batal')),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------- LAPOR KE ADMIN (mode pembeli) ----------
+// Sama dengan alur "laporkan postingan" di web & mode mitra.
+
+const List<String> _laporReasons = [
+  'Penipuan / mencurigakan',
+  'Spam / iklan',
+  'Kontak salah',
+  'Konten tidak pantas',
+  'Lainnya',
+];
+
+Future<bool> _kirimLaporan({
+  required String kebutuhanId,
+  required String title,
+  required String alasan,
+  required String catatan,
+  required String pelapor,
+}) async {
+  try {
+    final r = await Net.postJson('${Api.base}/lapor-tambah.php', {
+      'kebutuhan_id': int.tryParse(kebutuhanId) ?? 0,
+      'kebutuhan_title': title,
+      'alasan': alasan,
+      'catatan': catatan,
+      'pelapor': pelapor,
+      'device_id': Api.deviceId,
+    });
+    final j = jsonDecode(r.body);
+    return j is Map && j['ok'] == true;
+  } catch (_) {
+    return false;
+  }
+}
+
+void _showLaporSheet(BuildContext context, Kebutuhan k) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) => _LaporSheet(k: k),
+  );
+}
+
+class _LaporSheet extends StatefulWidget {
+  final Kebutuhan k;
+  const _LaporSheet({required this.k});
+
+  @override
+  State<_LaporSheet> createState() => _LaporSheetState();
+}
+
+class _LaporSheetState extends State<_LaporSheet> {
+  String _alasan = '';
+  final _catatan = TextEditingController();
+  bool _busy = false;
+  bool _done = false;
+  String _err = '';
+
+  @override
+  void dispose() {
+    _catatan.dispose();
+    super.dispose();
+  }
+
+  Future<void> _kirim() async {
+    if (_alasan.isEmpty) {
+      setState(() => _err = 'Pilih alasan laporan dulu.');
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _err = '';
+    });
+    final pelapor = Api.currentUser?.nama ?? Api.currentMitra?.displayName ?? '';
+    final ok = await _kirimLaporan(
+      kebutuhanId: widget.k.id,
+      title: widget.k.title,
+      alasan: _alasan,
+      catatan: _catatan.text.trim(),
+      pelapor: pelapor,
+    );
+    if (!mounted) return;
+    if (ok) {
+      setState(() {
+        _busy = false;
+        _done = true;
+      });
+      Future.delayed(const Duration(milliseconds: 1200), () {
+        if (mounted) Navigator.pop(context);
+      });
+    } else {
+      setState(() {
+        _busy = false;
+        _err = 'Gagal mengirim laporan. Coba lagi.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(left: 20, right: 20, top: 12, bottom: MediaQuery.of(context).viewInsets.bottom + 16),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+          child: SingleChildScrollView(child: _done ? _success() : _form()),
+        ),
+      ),
+    );
+  }
+
+  Widget _success() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: const [
+        SizedBox(height: 24),
+        Text('\u2705', style: TextStyle(fontSize: 40)),
+        SizedBox(height: 12),
+        Text(
+          'Laporan terkirim. Terima kasih!\nAdmin akan meninjau.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+        ),
+        SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _form() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Center(
+          child: Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(color: const Color(0xFFE5E7EB), borderRadius: BorderRadius.circular(2)),
+          ),
+        ),
+        const Text('\u2757 Lapor ke Admin', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+        const SizedBox(height: 6),
+        Text('Laporkan: \"${widget.k.title}\"',
+            style: const TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+        const SizedBox(height: 14),
+        const Text('Alasan', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _laporReasons.map((r) {
+            final sel = _alasan == r;
+            return ChoiceChip(
+              label: Text(r),
+              selected: sel,
+              onSelected: _busy ? null : (_) => setState(() => _alasan = r),
+              backgroundColor: const Color(0xFFF8FAFC),
+              selectedColor: const Color(0xFFFEF2F2),
+              labelStyle: TextStyle(
+                fontSize: 13,
+                fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+                color: sel ? const Color(0xFFB91C1C) : const Color(0xFF374151),
+              ),
+              side: BorderSide(color: sel ? const Color(0xFFDC2626) : const Color(0xFFE8ECF3)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 14),
+        const Text('Catatan (opsional)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _catatan,
+          maxLines: 3,
+          decoration: InputDecoration(
+            hintText: 'Tambahkan detail jika perlu\u2026',
+            isDense: true,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        if (_err.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Text(_err, style: const TextStyle(color: Color(0xFFDC2626), fontSize: 13)),
+        ],
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: _busy ? null : _kirim,
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
+            child: _busy
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Text('Kirim Laporan'),
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: TextButton(
+            onPressed: _busy ? null : () => Navigator.pop(context),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFF64748B)),
+            child: const Text('Batal'),
+          ),
         ),
       ],
     );
