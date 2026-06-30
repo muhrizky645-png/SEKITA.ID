@@ -102,6 +102,16 @@ class _TokoScreenState extends State<TokoScreen> {
                           width: double.infinity,
                           height: 48,
                           child: FilledButton.icon(
+                            onPressed: _edit,
+                            icon: const Icon(Icons.edit_outlined, size: 18),
+                            label: const Text('Edit Toko'),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: FilledButton.icon(
                             onPressed: _promosikan,
                             style: FilledButton.styleFrom(backgroundColor: const Color(0xFFF59E0B)),
                             icon: const Icon(Icons.campaign_rounded, size: 20),
@@ -113,16 +123,6 @@ class _TokoScreenState extends State<TokoScreen> {
                           'Tampil paling atas di pencarian & beranda. Atur paket promosi di web Sekita.',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: _muted, fontSize: 12, height: 1.4),
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: FilledButton.icon(
-                            onPressed: _edit,
-                            icon: const Icon(Icons.edit_outlined, size: 18),
-                            label: const Text('Edit Toko'),
-                          ),
                         ),
                       ],
                     ),
