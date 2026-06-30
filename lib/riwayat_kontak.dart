@@ -34,8 +34,10 @@ class _RiwayatKontakScreenState extends State<RiwayatKontakScreen> {
     return mine;
   }
 
+  void _reload() => setState(() => _future = _load());
+
   Future<void> _refresh() async {
-    setState(() => _future = _load());
+    _reload();
     await _future;
   }
 
@@ -74,7 +76,19 @@ class _RiwayatKontakScreenState extends State<RiwayatKontakScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
-      appBar: AppBar(title: const Text('Riwayat Kontak')),
+      appBar: AppBar(
+        titleSpacing: 16,
+        title: const Text('Riwayat Kontak',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20)),
+        actions: [
+          IconButton(
+            onPressed: _reload,
+            icon: const Icon(Icons.refresh, size: 22),
+            tooltip: 'Muat ulang',
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: _refresh,
         child: FutureBuilder<List<Kebutuhan>>(
@@ -84,38 +98,84 @@ class _RiwayatKontakScreenState extends State<RiwayatKontakScreen> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snap.hasError) {
-              return ListView(
-                children: const [
-                  SizedBox(height: 120),
-                  Center(child: Text('Gagal memuat riwayat. Tarik untuk coba lagi.')),
-                ],
-              );
+              return _errorView();
             }
             final items = snap.data ?? [];
             if (items.isEmpty) {
-              return ListView(
-                children: const [
-                  SizedBox(height: 100),
-                  Icon(Icons.history, size: 48, color: _muted),
-                  SizedBox(height: 8),
-                  Center(child: Text('Belum ada lead yang kamu hubungi.', style: TextStyle(color: _muted))),
-                  SizedBox(height: 4),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 32),
-                    child: Center(child: Text('Lead yang sudah kamu hubungi dari tab Lead akan muncul di sini.', textAlign: TextAlign.center, style: TextStyle(color: _muted, fontSize: 12.5))),
-                  ),
-                ],
-              );
+              return _emptyView();
             }
             return ListView.separated(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-              itemCount: items.length,
+              padding: const EdgeInsets.fromLTRB(12, 14, 12, 24),
+              itemCount: items.length + 1,
               separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (_, i) => _RiwayatCard(k: items[i], onHubungi: () => _hubungiLagi(items[i])),
+              itemBuilder: (_, i) {
+                if (i == 0) {
+                  return Padding(
+                    padding: const EdgeInsets.only(left: 4, bottom: 2),
+                    child: Text(
+                      '${items.length} lead pernah kamu hubungi',
+                      style: const TextStyle(color: _muted, fontSize: 12.5, fontWeight: FontWeight.w600),
+                    ),
+                  );
+                }
+                final k = items[i - 1];
+                return _RiwayatCard(k: k, onHubungi: () => _hubungiLagi(k));
+              },
             );
           },
         ),
       ),
+    );
+  }
+
+  Widget _emptyView() {
+    return ListView(
+      children: [
+        const SizedBox(height: 70),
+        Center(
+          child: Container(
+            width: 72,
+            height: 72,
+            decoration: const BoxDecoration(
+              color: Color(0xFFDCFCE7),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.history, color: _green, size: 34),
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Text('Belum ada lead yang dihubungi',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: kInk)),
+        const SizedBox(height: 6),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 40),
+          child: Text(
+            'Lead yang sudah kamu hubungi dari tab Lead akan muncul di sini.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: _muted, fontSize: 13, height: 1.5),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _errorView() {
+    return ListView(
+      children: [
+        const SizedBox(height: 90),
+        const Icon(Icons.wifi_off_rounded, size: 56, color: _muted),
+        const SizedBox(height: 12),
+        const Center(child: Text('Gagal memuat riwayat. Periksa koneksi internet.')),
+        const SizedBox(height: 12),
+        Center(
+          child: FilledButton(
+            onPressed: _reload,
+            style: FilledButton.styleFrom(backgroundColor: _green),
+            child: const Text('Coba lagi'),
+          ),
+        ),
+      ],
     );
   }
 }
