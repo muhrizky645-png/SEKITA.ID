@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'api.dart';
 import 'core.dart';
 import 'models.dart';
-import 'widgets.dart';
 
 const Color _muted = Color(0xFF64748B);
 const Color _line = Color(0xFFE8ECF3);
@@ -203,7 +202,13 @@ class _RiwayatCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: SizedBox(width: 44, height: 44, child: KebutuhanAvatar(k: k)),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  color: const Color(0xFFEFF4FF),
+                  padding: const EdgeInsets.all(9),
+                  child: SekitaImage(catIconPath(k.cat), fit: BoxFit.contain),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -253,8 +258,13 @@ class _RiwayatCard extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onHubungi,
                 style: OutlinedButton.styleFrom(foregroundColor: _green, side: const BorderSide(color: _green)),
-                icon: const Icon(Icons.chat_outlined, size: 18),
-                label: const Text('Hubungi lagi'),
+                icon: Image.asset(
+                  'assets/img/wa.png',
+                  width: 18,
+                  height: 18,
+                  errorBuilder: (_, __, ___) => const Icon(Icons.chat_outlined, size: 18, color: _green),
+                ),
+                label: const Text('WhatsApp lagi'),
               ),
             ],
           ),
