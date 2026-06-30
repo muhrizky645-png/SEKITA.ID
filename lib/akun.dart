@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'api.dart';
 import 'core.dart';
 import 'models.dart';
@@ -152,6 +153,7 @@ class _AkunScreenState extends State<AkunScreen> {
       _card([
         _MenuRow(icon: Icons.help_outline, color: kBrand, title: 'Bantuan & FAQ', subtitle: 'Pertanyaan yang sering ditanya', onTap: () => _open(const _FaqScreen())),
         _MenuRow(icon: Icons.gavel_outlined, color: const Color(0xFF7C3AED), title: 'Syarat & Ketentuan', subtitle: 'Ketentuan penggunaan Sekita', onTap: () => _open(const _SyaratScreen())),
+        _MenuRow(icon: Icons.privacy_tip_outlined, color: kBrand, title: 'Kebijakan Privasi', subtitle: 'Cara kami mengelola datamu', onTap: _privasi),
         _MenuRow(icon: Icons.info_outline, color: _muted, title: 'Tentang Aplikasi', subtitle: 'Info Sekita, kontak & versi', onTap: _tentang),
       ]),
       const SizedBox(height: 14),
@@ -167,6 +169,7 @@ class _AkunScreenState extends State<AkunScreen> {
       _card([
         _MenuRow(icon: Icons.help_outline, color: kBrand, title: 'Bantuan & FAQ', subtitle: 'Pertanyaan yang sering ditanya', onTap: () => _open(const _FaqScreen())),
         _MenuRow(icon: Icons.gavel_outlined, color: const Color(0xFF7C3AED), title: 'Syarat & Ketentuan', subtitle: 'Ketentuan penggunaan Sekita', onTap: () => _open(const _SyaratScreen())),
+        _MenuRow(icon: Icons.privacy_tip_outlined, color: kBrand, title: 'Kebijakan Privasi', subtitle: 'Cara kami mengelola datamu', onTap: _privasi),
         _MenuRow(icon: Icons.info_outline, color: _muted, title: 'Tentang Aplikasi', subtitle: 'Info Sekita, kontak & versi', onTap: _tentang),
       ]),
       const SizedBox(height: 14),
@@ -220,6 +223,17 @@ class _AkunScreenState extends State<AkunScreen> {
         actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Tutup'))],
       ),
     );
+  }
+
+  /// Buka halaman Kebijakan Privasi di web Sekita (sumber tunggal, anti basi).
+  Future<void> _privasi() async {
+    final uri = Uri.parse('https://' 'sekita.id/kebijakan-privasi.html');
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak bisa membuka halaman. Coba lagi.')),
+      );
+    }
   }
 
   Future<void> _logout() async {
