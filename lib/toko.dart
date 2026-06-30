@@ -53,11 +53,10 @@ class _TokoScreenState extends State<TokoScreen> {
     if (changed == true) _load();
   }
 
-  /// Buka halaman paket promosi/sponsor di web Sekita (promosi dilakukan di web).
+  /// Buka halaman paket promosi/sponsor di web Sekita. Promosi dilakukan di web;
+  /// halaman web sudah menggate sendiri (minta login mitra / verifikasi bila perlu).
   Future<void> _promosikan() async {
-    final m = Api.currentMitra;
-    if (m == null) return;
-    final uri = Uri.parse('https://' 'sekita.id/paket-sponsor.php?id=${m.id}');
+    final uri = Uri.parse('https://' 'sekita.id/paket-sponsor.html');
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
