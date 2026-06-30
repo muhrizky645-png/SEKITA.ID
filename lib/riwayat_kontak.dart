@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'api.dart';
 import 'core.dart';
 import 'models.dart';
+import 'kebutuhan.dart';
 
 const Color _muted = Color(0xFF64748B);
 const Color _line = Color(0xFFE8ECF3);
@@ -43,6 +44,10 @@ class _RiwayatKontakScreenState extends State<RiwayatKontakScreen> {
   void _snack(String m) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  }
+
+  void _openDetail(Kebutuhan k) {
+    openKebutuhanDetail(context, k, mine: false, onChanged: _reload);
   }
 
   Future<void> _hubungiLagi(Kebutuhan k) async {
@@ -118,7 +123,11 @@ class _RiwayatKontakScreenState extends State<RiwayatKontakScreen> {
                   );
                 }
                 final k = items[i - 1];
-                return _RiwayatCard(k: k, onHubungi: () => _hubungiLagi(k));
+                return _RiwayatCard(
+                  k: k,
+                  onTap: () => _openDetail(k),
+                  onHubungi: () => _hubungiLagi(k),
+                );
               },
             );
           },
@@ -182,93 +191,103 @@ class _RiwayatKontakScreenState extends State<RiwayatKontakScreen> {
 class _RiwayatCard extends StatelessWidget {
   final Kebutuhan k;
   final VoidCallback onHubungi;
-  const _RiwayatCard({required this.k, required this.onHubungi});
+  final VoidCallback onTap;
+  const _RiwayatCard({required this.k, required this.onHubungi, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final done = k.status == 'done' || k.status == 'selesai' || k.status == 'closed';
     return Container(
-      padding: const EdgeInsets.all(14),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _line),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  color: const Color(0xFFEFF4FF),
-                  padding: const EdgeInsets.all(9),
-                  child: SekitaImage(catIconPath(k.cat), fit: BoxFit.contain),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(k.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: kInk)),
-                    const SizedBox(height: 2),
-                    Text('${k.cat}${k.loc.isNotEmpty ? ' \u00b7 ${k.loc}' : ''}', style: const TextStyle(color: _muted, fontSize: 12.5)),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        color: const Color(0xFFEFF4FF),
+                        padding: const EdgeInsets.all(9),
+                        child: SekitaImage(catIconPath(k.cat), fit: BoxFit.contain),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(k.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: kInk)),
+                          const SizedBox(height: 2),
+                          Text('${k.cat}${k.loc.isNotEmpty ? ' \u00b7 ${k.loc}' : ''}', style: const TextStyle(color: _muted, fontSize: 12.5)),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: (done ? _muted : _green).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        done ? 'Selesai' : 'Aktif',
+                        style: TextStyle(color: done ? _muted : _green, fontWeight: FontWeight.w700, fontSize: 11.5),
+                      ),
+                    ),
                   ],
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: (done ? _muted : _green).withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(20),
+                if (k.budget.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      const Icon(Icons.payments_outlined, size: 16, color: _muted),
+                      const SizedBox(width: 6),
+                      Expanded(child: Text(k.budget, style: const TextStyle(color: kInk, fontSize: 13))),
+                    ],
+                  ),
+                ],
+                if (k.deskripsi.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(k.deskripsi, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _muted, fontSize: 13)),
+                ],
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.check_circle_outline, size: 16, color: _green),
+                    const SizedBox(width: 6),
+                    Text('${k.contactedCount}/7 penawar', style: const TextStyle(color: _muted, fontSize: 12.5)),
+                    const Spacer(),
+                    OutlinedButton.icon(
+                      onPressed: onHubungi,
+                      style: OutlinedButton.styleFrom(foregroundColor: _green, side: const BorderSide(color: _green)),
+                      icon: Image.asset(
+                        'assets/img/wa.png',
+                        width: 18,
+                        height: 18,
+                        errorBuilder: (_, __, ___) => const Icon(Icons.chat_outlined, size: 18, color: _green),
+                      ),
+                      label: const Text('WhatsApp lagi'),
+                    ),
+                  ],
                 ),
-                child: Text(
-                  done ? 'Selesai' : 'Aktif',
-                  style: TextStyle(color: done ? _muted : _green, fontWeight: FontWeight.w700, fontSize: 11.5),
-                ),
-              ),
-            ],
-          ),
-          if (k.budget.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                const Icon(Icons.payments_outlined, size: 16, color: _muted),
-                const SizedBox(width: 6),
-                Expanded(child: Text(k.budget, style: const TextStyle(color: kInk, fontSize: 13))),
               ],
             ),
-          ],
-          if (k.deskripsi.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(k.deskripsi, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _muted, fontSize: 13)),
-          ],
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Icon(Icons.check_circle_outline, size: 16, color: _green),
-              const SizedBox(width: 6),
-              Text('${k.contactedCount}/7 penawar', style: const TextStyle(color: _muted, fontSize: 12.5)),
-              const Spacer(),
-              OutlinedButton.icon(
-                onPressed: onHubungi,
-                style: OutlinedButton.styleFrom(foregroundColor: _green, side: const BorderSide(color: _green)),
-                icon: Image.asset(
-                  'assets/img/wa.png',
-                  width: 18,
-                  height: 18,
-                  errorBuilder: (_, __, ___) => const Icon(Icons.chat_outlined, size: 18, color: _green),
-                ),
-                label: const Text('WhatsApp lagi'),
-              ),
-            ],
           ),
-        ],
+        ),
       ),
     );
   }
