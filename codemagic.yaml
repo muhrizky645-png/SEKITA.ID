@@ -1,0 +1,53 @@
+# Codemagic CI/CD — Sekita (Flutter Android)
+# Dokumentasi: https://docs.codemagic.io/yaml-quick-start/building-a-flutter-app/
+#
+# CARA PAKAI (1x setup):
+# 1. codemagic.io -> Add application -> pilih repo SEKITA.ID (Flutter App).
+# 2. Teams -> Code signing identities -> Android keystores: upload sekita-release.jks.
+#    - Beri Reference name PERSIS: sekita_keystore
+#    - Key alias: sekita  (+ isi store/key password)
+# 3. Buka tab "codemagic.yaml" di build -> pilih workflow "android-release" -> Start new build.
+# Hasil: app-release.aab (untuk Play Store) + app-release.apk (untuk tes manual di HP).
+
+workflows:
+  android-release:
+    name: Sekita Android Release
+    max_build_duration: 60
+    instance_type: linux_x2   # Android-only cukup pakai Linux (lebih hemat menit build)
+    environment:
+      flutter: stable
+      java: 17
+      android_signing:
+        - sekita_keystore   # HARUS sama dengan Reference name keystore di Codemagic
+      vars:
+        PACKAGE_NAME: "id.sekita.app"
+    scripts:
+      - name: Buat android/key.properties dari keystore Codemagic
+        script: |
+          set -e
+          cat > android/key.properties <<EOF
+          storeFile=$CM_KEYSTORE_PATH
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          keyPassword=$CM_KEY_PASSWORD
+          EOF
+      - name: Flutter pub get
+        script: flutter pub get
+      - name: Flutter analyze (tidak memblokir build)
+        script: flutter analyze || true
+      - name: Build AAB (Android App Bundle) untuk Play Store
+        script: flutter build appbundle --release --build-number=$BUILD_NUMBER
+      - name: Build APK (tes manual di HP)
+        script: flutter build apk --release --build-number=$BUILD_NUMBER
+    artifacts:
+      - build/**/outputs/bundle/**/*.aab
+      - build/**/outputs/**/*.apk
+      - build/**/outputs/**/mapping.txt
+      - flutter_drive.log
+    # publishing:
+    #   email:
+    #     recipients:
+    #       - afifajames@gmail.com
+    #     notify:
+    #       success: true
+    #       failure: true
