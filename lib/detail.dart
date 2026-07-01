@@ -398,7 +398,7 @@ class _MitraDetailScreenState extends State<MitraDetailScreen> {
                 : () => openWa(m.wa,
                     text: 'Halo ${m.displayName}, saya menemukan Anda di aplikasi Sekita. '
                         'Saya tertarik dengan jasa ${m.kategori}.'),
-            icon: Image.asset('assets/img/wa.png', width: 22, height: 22),
+            icon: const Icon(Icons.chat, color: Colors.white, size: 22),
             label: const Text('WhatsApp',
                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
           ),
