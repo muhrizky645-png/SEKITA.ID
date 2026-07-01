@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'api.dart';
 import 'core.dart';
@@ -12,11 +14,112 @@ import 'toko.dart';
 import 'notif_bell.dart';
 import 'notif.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Api.initDeviceId();
-  await Notif.init();
-  runApp(const SekitaApp());
+// Titik masuk app. Dibungkus runZonedGuarded + ErrorWidget kustom supaya bila
+// terjadi error saat startup/render, app TIDAK force-close diam-diam, melainkan
+// menampilkan pesan error yang bisa discreenshot untuk debugging.
+void main() {
+  ErrorWidget.builder = (FlutterErrorDetails details) =>
+      _FatalErrorScreen(message: details.exceptionAsString());
+
+  runZonedGuarded<Future<void>>(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.presentError(details);
+    };
+    ui.PlatformDispatcher.instance.onError = (error, stack) {
+      debugPrint('Uncaught async error: $error\n$stack');
+      return true;
+    };
+
+    // Inisialisasi ringan. Masing-masing sudah aman (try/catch internal),
+    // tapi tetap dibungkus agar kegagalan init tak pernah menutup app.
+    try {
+      await Api.initDeviceId();
+    } catch (e, s) {
+      debugPrint('initDeviceId gagal: $e\n$s');
+    }
+    try {
+      await Notif.init();
+    } catch (e, s) {
+      debugPrint('Notif.init gagal: $e\n$s');
+    }
+
+    runApp(const SekitaApp());
+  }, (error, stack) {
+    runApp(_FatalErrorApp(message: '$error\n\n$stack'));
+  });
+}
+
+// Layar error fatal (dipakai saat startup gagal total).
+class _FatalErrorApp extends StatelessWidget {
+  final String message;
+  const _FatalErrorApp({required this.message});
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: _FatalErrorScreen(message: message),
+    );
+  }
+}
+
+class _FatalErrorScreen extends StatelessWidget {
+  final String message;
+  const _FatalErrorScreen({required this.message});
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: MediaQuery(
+        data: MediaQueryData.fromView(ui.PlatformDispatcher.instance.views.first),
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Terjadi kesalahan saat membuka aplikasi',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Screenshot layar ini lalu kirim ke pengembang.',
+                    style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: SelectableText(
+                          message,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            height: 1.4,
+                            color: Color(0xFF991B1B),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class SekitaApp extends StatelessWidget {
