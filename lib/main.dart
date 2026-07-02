@@ -225,10 +225,11 @@ class _RootNavState extends State<RootNav> {
         hidden: onPosting,
         onTap: () => _go(2),
       ),
-      floatingActionButtonLocation: const _LoweredDockedFab(12),
+      floatingActionButtonLocation: const _LoweredDockedFab(18),
       bottomNavigationBar: _BottomBar(
         selectedIndex: _i,
         onSelect: _go,
+        notched: !onPosting,
       ),
     );
   }
@@ -257,7 +258,7 @@ class _RootNavState extends State<RootNav> {
 }
 
 // Lokasi FAB: sama seperti centerDocked tapi diturunkan beberapa piksel
-// supaya tombol + tidak terlalu nyembul ke atas (notch ikut menyesuaikan).
+// supaya tombol + duduk lebih dalam di cekungan (notch ikut menyesuaikan).
 class _LoweredDockedFab extends FloatingActionButtonLocation {
   final double dy;
   const _LoweredDockedFab(this.dy);
@@ -314,17 +315,22 @@ class _PostingFab extends StatelessWidget {
   }
 }
 
-// -- Bottom bar dengan notch --
+// -- Bottom bar dengan notch (datar saat tab Posting aktif) --
 class _BottomBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelect;
-  const _BottomBar({required this.selectedIndex, required this.onSelect});
+  final bool notched;
+  const _BottomBar({
+    required this.selectedIndex,
+    required this.onSelect,
+    this.notched = true,
+  });
 
   @override
   Widget build(BuildContext context) {
     return BottomAppBar(
-      shape: const CircularNotchedRectangle(),
-      notchMargin: 8,
+      shape: notched ? const CircularNotchedRectangle() : null,
+      notchMargin: notched ? 6 : 0,
       color: Colors.white,
       elevation: 10,
       child: SizedBox(
@@ -333,27 +339,36 @@ class _BottomBar extends StatelessWidget {
           children: [
             _item(Icons.home_outlined, Icons.home, 'Beranda', 0),
             _item(Icons.search_outlined, Icons.search, 'Cari', 1),
-            Expanded(
-              child: InkWell(
-                onTap: () => onSelect(2),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Posting',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: selectedIndex == 2 ? FontWeight.w700 : FontWeight.normal,
-                        color: selectedIndex == 2 ? kBrand : Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                  ],
-                ),
-              ),
-            ),
+            _middle(),
             _item(Icons.assignment_outlined, Icons.assignment, 'Kebutuhan', 3),
             _item(Icons.person_outline, Icons.person, 'Akun', 4),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Item tengah: saat ada FAB (notched) hanya sisakan label di bawah;
+  // saat bar datar (tab Posting aktif) tampilkan item Posting normal ber-ikon.
+  Widget _middle() {
+    if (!notched) {
+      return _item(Icons.add_circle_outline, Icons.add_circle, 'Posting', 2);
+    }
+    return Expanded(
+      child: InkWell(
+        onTap: () => onSelect(2),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              'Posting',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: selectedIndex == 2 ? FontWeight.w700 : FontWeight.normal,
+                color: selectedIndex == 2 ? kBrand : Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 6),
           ],
         ),
       ),
