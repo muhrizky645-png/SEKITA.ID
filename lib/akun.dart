@@ -203,25 +203,88 @@ class _AkunScreenState extends State<AkunScreen> {
   void _tentang() {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Tentang Sekita'),
-        content: Column(
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.white,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text('Sekita - marketplace jasa lokal Jogja.', style: TextStyle(fontWeight: FontWeight.w600)),
-            SizedBox(height: 6),
-            Text('Posting kebutuhanmu. Biarkan ahlinya datang.', style: TextStyle(color: _muted, fontSize: 13)),
-            SizedBox(height: 12),
-            Text('Versi 1.0.0', style: TextStyle(color: _muted, fontSize: 13)),
-            SizedBox(height: 4),
-            Text('Website: sekita.id', style: TextStyle(color: _muted, fontSize: 13)),
-            SizedBox(height: 4),
-            Text('Admin: 0896-0762-0368', style: TextStyle(color: _muted, fontSize: 13)),
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+              decoration: const BoxDecoration(gradient: kBrandGradient),
+              child: Column(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+                    child: Image.asset(
+                      'assets/icon/sekita_icon.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.handshake_outlined, color: kBrand, size: 30),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('Sekita', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20)),
+                  const SizedBox(height: 2),
+                  const Text('marketplace jasa lokal Jogja', style: TextStyle(color: Colors.white70, fontSize: 12.5)),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Posting kebutuhanmu. Biarkan ahlinya datang.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0xFF334155), fontSize: 13.5, height: 1.4),
+                  ),
+                  const SizedBox(height: 16),
+                  _tentangRow(Icons.verified_outlined, 'Versi', '1.0.0'),
+                  const SizedBox(height: 10),
+                  _tentangRow(Icons.language_outlined, 'Website', 'sekita.id'),
+                  const SizedBox(height: 10),
+                  _tentangRow(Icons.support_agent_outlined, 'Admin', '0896-0762-0368'),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
+              child: SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: TextButton.styleFrom(foregroundColor: kBrand),
+                  child: const Text('Tutup', style: TextStyle(fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ),
           ],
         ),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Tutup'))],
       ),
+    );
+  }
+
+  Widget _tentangRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(color: kBrand.withOpacity(0.10), borderRadius: BorderRadius.circular(10)),
+          child: Icon(icon, color: kBrand, size: 18),
+        ),
+        const SizedBox(width: 12),
+        Text(label, style: const TextStyle(color: _muted, fontSize: 13)),
+        const Spacer(),
+        Text(value, style: const TextStyle(color: kInk, fontSize: 13.5, fontWeight: FontWeight.w700)),
+      ],
     );
   }
 
@@ -239,13 +302,61 @@ class _AkunScreenState extends State<AkunScreen> {
   Future<void> _logout() async {
     final yes = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Keluar'),
-        content: const Text('Yakin mau keluar dari akun?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Keluar')),
-        ],
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.white,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(color: kBrand.withOpacity(0.10), shape: BoxShape.circle),
+                child: const Icon(Icons.logout_rounded, color: kBrand, size: 28),
+              ),
+              const SizedBox(height: 16),
+              const Text('Keluar dari akun?', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17, color: kInk)),
+              const SizedBox(height: 6),
+              const Text(
+                'Kamu perlu masuk lagi untuk mengelola postingan & profilmu.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: _muted, fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 22),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: kInk,
+                        side: const BorderSide(color: _line),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+                      ),
+                      child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _danger,
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+                      ),
+                      child: const Text('Keluar', style: TextStyle(fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
     if (yes == true) {
