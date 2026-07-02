@@ -648,6 +648,16 @@ class Api {
     }
   }
 
+  /// Catat 1 kali \"dilihat\" untuk toko/profil mitra.
+  /// Dipanggil saat pembeli membuka halaman detail mitra (fire-and-forget, senyap).
+  static Future<void> catatLihat(String mitraId) async {
+    final id = int.tryParse(mitraId) ?? 0;
+    if (id <= 0) return;
+    try {
+      await Net.postJson('$base/sesi.php?action=lihat', {'id': id});
+    } catch (_) {}
+  }
+
   /// Edit profil pembeli. Mengubah WA/email akan mereset status verifikasi di server.
   static Future<({bool ok, String error, bool reverify})> editProfil({
     required String nama,
