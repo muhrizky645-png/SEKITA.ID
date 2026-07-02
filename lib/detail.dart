@@ -408,22 +408,36 @@ class _MitraDetailScreenState extends State<MitraDetailScreen> {
                     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
               ),
             ),
-            const SizedBox(height: 8),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Icon(Icons.warning_amber_rounded, size: 14, color: Color(0xFFDC2626)),
-                SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    'Transaksi & kesepakatan dilakukan langsung antara kamu & mitra. Sekita hanya mempertemukan, bukan pihak dalam transaksi, dan tidak bertanggung jawab atas hasilnya. Cek dulu profil & portofolio sebelum bertransaksi.',
-                    style: TextStyle(
-                        fontSize: 10.5,
-                        height: 1.35,
-                        color: Color(0xFFB91C1C)),
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFECACA)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.shield_outlined, size: 15, color: Color(0xFFDC2626)),
+                      SizedBox(width: 6),
+                      Text('Perhatian',
+                          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFFB91C1C))),
+                    ],
                   ),
-                ),
-              ],
+                  SizedBox(height: 5),
+                  Text(
+                    'Transaksi berlangsung langsung antara kamu & mitra. Sekita hanya mempertemukan dan tidak bertanggung jawab atas hasilnya.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 11.5, height: 1.4, color: Color(0xFFB91C1C)),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
