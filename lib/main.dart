@@ -222,14 +222,13 @@ class _RootNavState extends State<RootNav> {
     return Scaffold(
       body: IndexedStack(index: _i, children: pages),
       floatingActionButton: _PostingFab(
-        hidden: onPosting,
+        active: onPosting,
         onTap: () => _go(2),
       ),
-      floatingActionButtonLocation: const _LoweredDockedFab(18),
+      floatingActionButtonLocation: const _LoweredDockedFab(12),
       bottomNavigationBar: _BottomBar(
         selectedIndex: _i,
         onSelect: _go,
-        notched: !onPosting,
       ),
     );
   }
@@ -269,72 +268,61 @@ class _LoweredDockedFab extends FloatingActionButtonLocation {
   }
 }
 
-// -- FAB tengah (tombol Posting) - disembunyikan dengan animasi saat di tab Posting --
+// -- FAB tengah (tombol Posting) - selalu bulat & terlihat. Warna berubah ungu
+// saat tab Posting aktif; biru saat tidak aktif. --
 class _PostingFab extends StatelessWidget {
-  final bool hidden;
+  final bool active;
   final VoidCallback onTap;
-  const _PostingFab({required this.hidden, required this.onTap});
+  const _PostingFab({required this.active, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return IgnorePointer(
-      ignoring: hidden,
-      child: AnimatedScale(
-        scale: hidden ? 0.0 : 1.0,
-        duration: Duration(milliseconds: hidden ? 200 : 320),
-        curve: hidden ? Curves.easeInBack : Curves.easeOutBack,
-        child: AnimatedOpacity(
-          opacity: hidden ? 0.0 : 1.0,
-          duration: const Duration(milliseconds: 180),
-          child: GestureDetector(
-            onTap: onTap,
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: const BoxDecoration(
-                color: kBrand,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x592563EB),
-                    blurRadius: 14,
-                    offset: Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.add,
-                color: Colors.white,
-                size: 28,
-              ),
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: active ? kBrandPurple : kBrand,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: active ? const Color(0x597C3AED) : const Color(0x592563EB),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
-          ),
+          ],
+        ),
+        child: const Icon(
+          Icons.add,
+          color: Colors.white,
+          size: 24,
         ),
       ),
     );
   }
 }
 
-// -- Bottom bar dengan notch (datar saat tab Posting aktif) --
+// -- Bottom bar dengan cekungan (notch) untuk FAB Posting yang selalu ada --
 class _BottomBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelect;
-  final bool notched;
   const _BottomBar({
     required this.selectedIndex,
     required this.onSelect,
-    this.notched = true,
   });
 
   @override
   Widget build(BuildContext context) {
     return BottomAppBar(
-      shape: notched ? const CircularNotchedRectangle() : null,
-      notchMargin: notched ? 6 : 0,
+      shape: const CircularNotchedRectangle(),
+      notchMargin: 5,
       color: Colors.white,
       elevation: 10,
       child: SizedBox(
-        height: 58,
+        height: 48,
         child: Row(
           children: [
             _item(Icons.home_outlined, Icons.home, 'Beranda', 0),
@@ -348,12 +336,10 @@ class _BottomBar extends StatelessWidget {
     );
   }
 
-  // Item tengah: saat ada FAB (notched) hanya sisakan label di bawah;
-  // saat bar datar (tab Posting aktif) tampilkan item Posting normal ber-ikon.
+  // Item tengah: cuma label 'Posting' di bawah, karena tombol + (FAB) selalu
+  // menempati cekungan di atasnya.
   Widget _middle() {
-    if (!notched) {
-      return _item(Icons.add_circle_outline, Icons.add_circle, 'Posting', 2);
-    }
+    final sel = selectedIndex == 2;
     return Expanded(
       child: InkWell(
         onTap: () => onSelect(2),
@@ -364,8 +350,8 @@ class _BottomBar extends StatelessWidget {
               'Posting',
               style: TextStyle(
                 fontSize: 10,
-                fontWeight: selectedIndex == 2 ? FontWeight.w700 : FontWeight.normal,
-                color: selectedIndex == 2 ? kBrand : Colors.grey[600],
+                fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
+                color: sel ? kBrandPurple : Colors.grey[600],
               ),
             ),
             const SizedBox(height: 6),
@@ -384,7 +370,7 @@ class _BottomBar extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(sel ? selIcon : icon, color: sel ? kBrand : Colors.grey[600], size: 24),
+            Icon(sel ? selIcon : icon, color: sel ? kBrand : Colors.grey[600], size: 22),
             const SizedBox(height: 2),
             Text(
               label,
