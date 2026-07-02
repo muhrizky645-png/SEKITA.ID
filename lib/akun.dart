@@ -1162,14 +1162,25 @@ class _AuthViewState extends State<_AuthView> {
       children: [
         Center(
           child: Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [kBrand, kBrandDark], begin: Alignment.topLeft, end: Alignment.bottomRight),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: kBrand.withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6))],
+            decoration: const BoxDecoration(
+              borderRadius: BorderRadius.all(Radius.circular(20)),
+              boxShadow: [BoxShadow(color: Color(0x447C3AED), blurRadius: 22, offset: Offset(0, 8))],
             ),
-            child: const Icon(Icons.handshake_outlined, color: Colors.white, size: 38),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.asset(
+                'assets/icon/sekita_icon.png',
+                width: 78,
+                height: 78,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  width: 78,
+                  height: 78,
+                  decoration: const BoxDecoration(gradient: kBrandGradient),
+                  child: const Icon(Icons.handshake_outlined, color: Colors.white, size: 40),
+                ),
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 16),
@@ -1240,19 +1251,10 @@ class _AuthViewState extends State<_AuthView> {
                 ),
               ],
               SizedBox(height: _isLogin ? 6 : 18),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: FilledButton(
-                  onPressed: _busy ? null : _submit,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: kBrand,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                  child: _busy
-                      ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : Text(_isLogin ? 'Masuk' : 'Daftar', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                ),
+              SekitaGradientButton(
+                label: _isLogin ? 'Masuk' : 'Daftar',
+                busy: _busy,
+                onTap: _busy ? null : _submit,
               ),
             ],
           ),
@@ -1305,16 +1307,7 @@ class _AuthViewState extends State<_AuthView> {
       obscureText: obscure,
       keyboardType: keyboard,
       style: const TextStyle(fontSize: 15, color: kInk),
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(ic, size: 20),
-        filled: true,
-        fillColor: const Color(0xFFF7F8FA),
-        floatingLabelStyle: const TextStyle(color: kBrand),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _line)),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _line)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: kBrand, width: 1.5)),
-      ),
+      decoration: sekitaInput(label, ic),
     );
   }
 }
