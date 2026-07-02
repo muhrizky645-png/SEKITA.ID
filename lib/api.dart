@@ -80,6 +80,8 @@ class MitraAkun {
   final int? perdanaNo;
   final int perdanaClaimed;
   final int verified;
+  final double rating;
+  final int dilihat;
 
   const MitraAkun({
     required this.id,
@@ -95,6 +97,8 @@ class MitraAkun {
     required this.perdanaNo,
     required this.perdanaClaimed,
     required this.verified,
+    this.rating = 0,
+    this.dilihat = 0,
   });
 
   String get displayName => namaUsaha.trim().isNotEmpty ? namaUsaha : nama;
@@ -105,6 +109,12 @@ class MitraAkun {
     if (v == null) return 0;
     if (v is num) return v.toInt();
     return int.tryParse('$v') ?? 0;
+  }
+
+  static double _toDouble(dynamic v) {
+    if (v == null) return 0;
+    if (v is num) return v.toDouble();
+    return double.tryParse('$v') ?? 0;
   }
 
   factory MitraAkun.fromJson(Map<String, dynamic> j) {
@@ -122,6 +132,8 @@ class MitraAkun {
       perdanaNo: j['perdana_no'] == null ? null : _toInt(j['perdana_no']),
       perdanaClaimed: _toInt(j['perdana_claimed']),
       verified: _toInt(j['verified']),
+      rating: _toDouble(j['rating']),
+      dilihat: _toInt(j['dilihat'] ?? j['views']),
     );
   }
 
@@ -140,6 +152,8 @@ class MitraAkun {
       perdanaNo: perdanaNo,
       perdanaClaimed: perdanaClaimed ?? this.perdanaClaimed,
       verified: verified,
+      rating: rating,
+      dilihat: dilihat,
     );
   }
 }
