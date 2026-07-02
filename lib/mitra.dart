@@ -987,6 +987,70 @@ class _AkunMitraScreenState extends State<AkunMitraScreen> {
     );
   }
 
+  /// Dua kartu ringkas bersampingan: rating toko & jumlah dilihat.
+  Widget _statCards(MitraAkun m) {
+    final ratingLabel = m.rating > 0 ? m.rating.toStringAsFixed(1) : 'Baru';
+    return Row(
+      children: [
+        Expanded(
+          child: _statCard(
+            icon: Icons.star_rounded,
+            iconColor: const Color(0xFFF59E0B),
+            value: ratingLabel,
+            label: 'Rating Toko',
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _statCard(
+            icon: Icons.visibility_outlined,
+            iconColor: kBrandPurple,
+            value: _fmtCount(m.dilihat),
+            label: 'Kali Dilihat',
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Satu kartu statistik ringkas (ikon + angka besar + label).
+  Widget _statCard({required IconData icon, required Color iconColor, required String value, required String label}) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(height: 10),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 22, color: kInk, height: 1.1)),
+          const SizedBox(height: 2),
+          Text(label, style: const TextStyle(color: _muted, fontSize: 12.5)),
+        ],
+      ),
+    );
+  }
+
+  /// Format angka ringkas: 1200 -> 1.2rb, 1500000 -> 1.5jt.
+  String _fmtCount(int n) {
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(n % 1000000 == 0 ? 0 : 1)}jt';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(n % 1000 == 0 ? 0 : 1)}rb';
+    return '$n';
+  }
+
   void _infoKontak(BuildContext context) {
     showDialog(
       context: context,
@@ -1094,6 +1158,8 @@ class _AkunMitraScreenState extends State<AkunMitraScreen> {
               child: Column(
                 children: [
                   _kontakCard(context, m),
+                  const SizedBox(height: 12),
+                  _statCards(m),
                   const SizedBox(height: 14),
                   if (m.bisaKlaimPerdana) ...[
                     Container(
