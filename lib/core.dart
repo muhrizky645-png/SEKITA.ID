@@ -5,9 +5,17 @@ import 'models.dart';
 
 const kBrand = Color(0xFF2563EB);
 const kBrandDark = Color(0xFF1D4ED8);
+const kBrandPurple = Color(0xFF7C3AED);
 const kBg = Color(0xFFF7F8FA);
 const kInk = Color(0xFF111827);
 const kLine = Color(0xFFE8ECF3);
+
+// Gradient tema Sekita (mengikuti logo): ungu -> biru.
+const LinearGradient kBrandGradient = LinearGradient(
+  colors: [kBrandPurple, kBrand],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+);
 
 ThemeData buildSekitaTheme() {
   final scheme = ColorScheme.fromSeed(seedColor: kBrand, primary: kBrand);
@@ -110,7 +118,7 @@ String catIconPath(String c) {
 
 String bannerPath(int n) => 'assets/img/banner/banner-$n.jpg';
 
-// \u2500\u2500 Verifikasi mitra (selaras dgn VERIF_TIERS di web) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// Verifikasi mitra (selaras dgn VERIF_TIERS di web).
 // Level 0 (Pemula/abu-abu) tidak ditampilkan sebagai badge. Hanya 1/2/3.
 class VerifTier {
   final int level;
@@ -138,7 +146,7 @@ VerifTier verifTierFor(int level) {
   return kVerifTiers[l];
 }
 
-// \u2500\u2500 Sponsor (selaras dgn sponsorOn & sortPromoted di web) \u2500\u2500\u2500\u2500\u2500
+// Sponsor (selaras dgn sponsorOn & sortPromoted di web).
 // 3 paket: 'beranda' (hanya di beranda), 'kategori' (hanya di halaman
 // kategori/cari), 'bundle' (tampil di mana saja). Paket kosong = sponsor lama
 // yang dianggap tampil di mana saja.
