@@ -225,7 +225,7 @@ class _RootNavState extends State<RootNav> {
         hidden: onPosting,
         onTap: () => _go(2),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: const _LoweredDockedFab(12),
       bottomNavigationBar: _BottomBar(
         selectedIndex: _i,
         onSelect: _go,
@@ -256,6 +256,18 @@ class _RootNavState extends State<RootNav> {
   }
 }
 
+// Lokasi FAB: sama seperti centerDocked tapi diturunkan beberapa piksel
+// supaya tombol + tidak terlalu nyembul ke atas (notch ikut menyesuaikan).
+class _LoweredDockedFab extends FloatingActionButtonLocation {
+  final double dy;
+  const _LoweredDockedFab(this.dy);
+  @override
+  Offset getOffset(ScaffoldPrelayoutGeometry geometry) {
+    final base = FloatingActionButtonLocation.centerDocked.getOffset(geometry);
+    return Offset(base.dx, base.dy + dy);
+  }
+}
+
 // -- FAB tengah (tombol Posting) - disembunyikan dengan animasi saat di tab Posting --
 class _PostingFab extends StatelessWidget {
   final bool hidden;
@@ -276,23 +288,23 @@ class _PostingFab extends StatelessWidget {
           child: GestureDetector(
             onTap: onTap,
             child: Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
+              width: 56,
+              height: 56,
+              decoration: const BoxDecoration(
                 color: kBrand,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: kBrand.withOpacity(0.35),
+                    color: Color(0x592563EB),
                     blurRadius: 14,
-                    offset: const Offset(0, 5),
+                    offset: Offset(0, 5),
                   ),
                 ],
               ),
               child: const Icon(
                 Icons.add,
                 color: Colors.white,
-                size: 32,
+                size: 28,
               ),
             ),
           ),
