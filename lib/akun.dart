@@ -213,25 +213,29 @@ class _AkunScreenState extends State<AkunScreen> {
           children: [
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+              padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
               decoration: const BoxDecoration(gradient: kBrandGradient),
               child: Column(
                 children: [
                   Container(
-                    width: 60,
-                    height: 60,
+                    width: 44,
+                    height: 44,
                     clipBehavior: Clip.antiAlias,
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
                     child: Image.asset(
                       'assets/icon/sekita_icon.png',
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.handshake_outlined, color: kBrand, size: 30),
+                      errorBuilder: (_, __, ___) => const Icon(Icons.handshake_outlined, color: kBrand, size: 24),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  const Text('Sekita', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20)),
-                  const SizedBox(height: 2),
-                  const Text('marketplace jasa lokal Jogja', style: TextStyle(color: Colors.white70, fontSize: 12.5)),
+                  const SizedBox(height: 10),
+                  const Text('Sekita', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 19)),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Marketplace jasa lokal Jogja yang mempertemukan kamu dengan penyedia jasa terpercaya di sekitarmu.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white70, fontSize: 12.5, height: 1.4),
+                  ),
                 ],
               ),
             ),
