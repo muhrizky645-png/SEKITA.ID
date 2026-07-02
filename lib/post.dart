@@ -458,8 +458,7 @@ class _PostKebutuhanScreenState extends State<PostKebutuhanScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset(catIconPath(c.name), width: 18, height: 18,
-                errorBuilder: (_, __, ___) => Text(c.emoji, style: const TextStyle(fontSize: 15))),
+            SekitaImage(catIconPath(c.name), width: 18, height: 18, fit: BoxFit.contain),
             const SizedBox(width: 7),
             Text(c.name,
                 style: TextStyle(
