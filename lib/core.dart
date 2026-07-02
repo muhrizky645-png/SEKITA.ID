@@ -62,6 +62,85 @@ ThemeData buildSekitaTheme() {
   );
 }
 
+// Dekorasi input field halus & konsisten: borderless dgn isian lembut, dan
+// garis fokus ungu (tema). Dipakai di form login/daftar (pembeli & mitra).
+InputDecoration sekitaInput(String label, IconData icon, {bool enabled = true, String? hint}) {
+  OutlineInputBorder border(Color c) => OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: c, width: 1.6),
+      );
+  return InputDecoration(
+    labelText: label,
+    hintText: hint,
+    prefixIcon: Icon(icon, size: 20, color: const Color(0xFF94A3B8)),
+    filled: true,
+    fillColor: enabled ? const Color(0xFFF3F5F9) : const Color(0xFFE9ECF2),
+    floatingLabelStyle: const TextStyle(color: kBrandPurple, fontWeight: FontWeight.w600),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    border: border(Colors.transparent),
+    enabledBorder: border(Colors.transparent),
+    disabledBorder: border(Colors.transparent),
+    focusedBorder: border(kBrandPurple),
+  );
+}
+
+// Tombol utama ber-gradient (ungu -> biru) dengan status loading + ripple.
+class SekitaGradientButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onTap;
+  final bool busy;
+  final double height;
+  final IconData? icon;
+  const SekitaGradientButton({
+    super.key,
+    required this.label,
+    this.onTap,
+    this.busy = false,
+    this.height = 52,
+    this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null && !busy;
+    return Opacity(
+      opacity: enabled ? 1 : 0.55,
+      child: Material(
+        color: Colors.transparent,
+        child: Ink(
+          width: double.infinity,
+          height: height,
+          decoration: BoxDecoration(
+            gradient: kBrandGradient,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: const [
+              BoxShadow(color: Color(0x33512DA8), blurRadius: 16, offset: Offset(0, 7)),
+            ],
+          ),
+          child: InkWell(
+            onTap: enabled ? onTap : null,
+            borderRadius: BorderRadius.circular(14),
+            child: Center(
+              child: busy
+                  ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (icon != null) ...[
+                          Icon(icon, color: Colors.white, size: 20),
+                          const SizedBox(width: 8),
+                        ],
+                        Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
+                      ],
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 String waNormalize(String wa) {
   var s = wa.replaceAll(RegExp(r'[^0-9]'), '');
   if (s.startsWith('0')) s = '62${s.substring(1)}';
