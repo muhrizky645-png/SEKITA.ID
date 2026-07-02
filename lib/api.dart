@@ -161,6 +161,11 @@ class MitraAkun {
 class Api {
   static const String base = 'https://' 'sekita.id/api';
 
+  /// Web OAuth Client ID Google (dipakai sebagai serverClientId agar idToken
+  /// yang dikirim ke backend punya audience yang benar untuk diverifikasi).
+  static const String googleServerClientId =
+      '490204802883-rvt1cvd6uq82vr36ugsghfotn54cguth.apps.googleusercontent.com';
+
   static const List<String> kategoriDasar = [
     'Terapis', 'Tukang', 'Transportasi', 'Servis AC', 'Kebersihan',
     'Les Privat', 'Fotografer', 'MUA', 'Lainnya',
@@ -501,6 +506,32 @@ class Api {
     } catch (_) {
       return (ok: false, error: 'Tidak dapat terhubung ke server.');
     }
+  }
+
+  /// Login/daftar via Google. Kirim [idToken] dari google_sign_in ke backend
+  /// untuk diverifikasi; backend mencocokkan/membuat akun pembeli by email.
+  /// needWa == true berarti akun belum punya nomor WhatsApp -> minta lengkapi.
+  static Future<({bool ok, String error, bool needWa})> loginGoogle(String idToken) async {
+    try {
+      final r = await Net.postJson('$base/sesi.php?action=google', {'id_token': idToken});
+      final j = jsonDecode(r.body);
+      if (j is Map && j['ok'] == true && j['loggedIn'] == true && j['user'] != null) {
+        _setPembeli(Pembeli.fromJson(j['user'] as Map<String, dynamic>));
+        final wa = '${(j['user'] as Map)['wa'] ?? ''}'.trim();
+        return (ok: true, error: '', needWa: j['need_wa'] == true || wa.isEmpty);
+      }
+      return (ok: false, error: (j is Map && j['error'] != null) ? '${j['error']}' : 'Login Google gagal.', needWa: false);
+    } catch (_) {
+      return (ok: false, error: 'Tidak dapat terhubung ke server.', needWa: false);
+    }
+  }
+
+  /// Simpan nomor WhatsApp setelah login Google (melengkapi profil pembeli).
+  static Future<({bool ok, String error})> lengkapiWa(String wa) async {
+    final u = currentUser;
+    if (u == null) return (ok: false, error: 'Belum login.');
+    final res = await editProfil(nama: u.nama, email: u.email, wa: wa);
+    return (ok: res.ok, error: res.error);
   }
 
   // ---------- MITRA: peran, pendaftaran, lead, kontak ----------
