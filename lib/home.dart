@@ -134,8 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  _header(user),
-                  _searchBar(),
+                  _hero(user),
                   const SizedBox(height: 14),
                   _banners(context),
                   const SizedBox(height: 14),
@@ -163,78 +162,100 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _lihatMitraLain() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
-      child: OutlinedButton(
-        onPressed: _openAllMitra,
-        style: OutlinedButton.styleFrom(
-          minimumSize: const Size.fromHeight(48),
-          foregroundColor: kBrand,
-          side: const BorderSide(color: kBrand),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: GestureDetector(
+        onTap: _openAllMitra,
+        child: Container(
+          height: 48,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            gradient: kBrandGradient,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Text('Lihat mitra lain',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
         ),
-        child: const Text('Lihat mitra lain',
-            style: TextStyle(fontWeight: FontWeight.w700)),
       ),
     );
   }
 
-  Widget _header(dynamic user) {
+  // Hero header dengan gradient ungu->biru (setema logo) + kolom pencarian.
+  Widget _hero(dynamic user) {
     final subtitle = (user != null && (user.nama as String).isNotEmpty)
         ? 'Hai, ${(user.nama as String).split(' ').first}! 👋'
         : 'Temukan jasa profesional di sekitarmu';
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+      decoration: const BoxDecoration(
+        gradient: kBrandGradient,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.asset(
-              'assets/icon/sekita_icon.png',
-              width: 38,
-              height: 38,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                    color: kBrand, borderRadius: BorderRadius.circular(10)),
-                child: const Icon(Icons.search, color: Colors.white, size: 22),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
             children: [
-              const Text('Sekita',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20, color: kInk)),
-              Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.asset(
+                  'assets/icon/sekita_icon.png',
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10)),
+                    child: const Icon(Icons.search, color: kBrand, size: 22),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Sekita',
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20, color: Colors.white)),
+                    Text(subtitle, style: const TextStyle(fontSize: 11, color: Color(0xFFE0E7FF))),
+                  ],
+                ),
+              ),
             ],
           ),
+          const SizedBox(height: 14),
+          _searchBar(),
         ],
       ),
     );
   }
 
   Widget _searchBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: GestureDetector(
-        onTap: _openSearch,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.search, color: Colors.grey[500]),
-              const SizedBox(width: 10),
-              Text('Cari jasa atau mitra...', style: TextStyle(color: Colors.grey[500])),
-            ],
-          ),
+    return GestureDetector(
+      onTap: _openSearch,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1A000000),
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.search, color: Colors.grey[500]),
+            const SizedBox(width: 10),
+            Text('Cari jasa atau mitra...', style: TextStyle(color: Colors.grey[500])),
+          ],
         ),
       ),
     );
@@ -279,7 +300,8 @@ class _HomeScreenState extends State<HomeScreen> {
               width: _bannerIdx == i ? 16 : 6,
               height: 6,
               decoration: BoxDecoration(
-                color: _bannerIdx == i ? kBrand : const Color(0xFFD1D5DB),
+                gradient: _bannerIdx == i ? kBrandGradient : null,
+                color: _bannerIdx == i ? null : const Color(0xFFD1D5DB),
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
@@ -357,7 +379,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: kBrand,
+                gradient: kBrandGradient,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Text('Login',
