@@ -1013,17 +1013,16 @@ class _AkunMitraScreenState extends State<AkunMitraScreen> {
     );
   }
 
-  /// Satu kartu statistik ringkas (ikon + angka besar + label).
+  /// Satu kartu statistik ringkas & pendek (ikon di kiri, teks di sampingnya).
   Widget _statCard({required IconData icon, required Color iconColor, required String value, required String label}) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _line),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
           Container(
             width: 34,
@@ -1031,14 +1030,21 @@ class _AkunMitraScreenState extends State<AkunMitraScreen> {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: iconColor.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(9),
             ),
-            child: Icon(icon, color: iconColor, size: 20),
+            child: Icon(icon, color: iconColor, size: 19),
           ),
-          const SizedBox(height: 10),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 22, color: kInk, height: 1.1)),
-          const SizedBox(height: 2),
-          Text(label, style: const TextStyle(color: _muted, fontSize: 12.5)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: kInk, height: 1.15)),
+                Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _muted, fontSize: 11.5)),
+              ],
+            ),
+          ),
         ],
       ),
     );
