@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'api.dart';
 import 'core.dart';
 import 'models.dart';
@@ -1217,6 +1218,10 @@ class _AuthViewState extends State<_AuthView> {
   final _wa = TextEditingController();
   final _email = TextEditingController();
   final _pass = TextEditingController();
+  final _googleSignIn = GoogleSignIn(
+    serverClientId: Api.googleServerClientId,
+    scopes: const ['email', 'profile'],
+  );
 
   @override
   void dispose() {
@@ -1267,6 +1272,56 @@ class _AuthViewState extends State<_AuthView> {
       await widget.onDone();
     } else {
       setState(() => _error = res.error);
+    }
+  }
+
+  /// Login/daftar dengan Google: ambil idToken via google_sign_in lalu kirim ke
+  /// backend. Bila akun baru belum punya WA -> tampilkan layar Lengkapi WA dulu.
+  Future<void> _googleMasuk() async {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await _googleSignIn.signOut();
+      final acc = await _googleSignIn.signIn();
+      if (acc == null) {
+        if (mounted) setState(() => _busy = false);
+        return;
+      }
+      final auth = await acc.authentication;
+      final idToken = auth.idToken;
+      if (idToken == null || idToken.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _busy = false;
+            _error = 'Gagal mendapatkan token Google. Coba lagi.';
+          });
+        }
+        return;
+      }
+      final res = await Api.loginGoogle(idToken);
+      if (!mounted) return;
+      setState(() => _busy = false);
+      if (!res.ok) {
+        setState(() => _error = res.error);
+        return;
+      }
+      if (res.needWa) {
+        final done = await Navigator.of(context).push<bool>(
+          MaterialPageRoute(builder: (_) => const _LengkapiWaScreen()),
+        );
+        if (done != true) return;
+      }
+      await widget.onDone();
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = 'Login Google gagal. Coba lagi.';
+        });
+      }
     }
   }
 
@@ -1374,6 +1429,39 @@ class _AuthViewState extends State<_AuthView> {
             ],
           ),
         ),
+        const SizedBox(height: 16),
+        Row(
+          children: const [
+            Expanded(child: Divider(color: _line)),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              child: Text('atau', style: TextStyle(color: _muted, fontSize: 12.5)),
+            ),
+            Expanded(child: Divider(color: _line)),
+          ],
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: OutlinedButton.icon(
+            onPressed: _busy ? null : _googleMasuk,
+            icon: Container(
+              width: 20,
+              height: 20,
+              alignment: Alignment.center,
+              child: const Text('G', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF4285F4))),
+            ),
+            label: Text(
+              _isLogin ? 'Masuk dengan Google' : 'Daftar dengan Google',
+              style: const TextStyle(fontWeight: FontWeight.w700, color: kInk),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: _line),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+          ),
+        ),
         const SizedBox(height: 18),
         Center(
           child: GestureDetector(
@@ -1423,6 +1511,93 @@ class _AuthViewState extends State<_AuthView> {
       keyboardType: keyboard,
       style: const TextStyle(fontSize: 15, color: kInk),
       decoration: sekitaInput(label, ic),
+    );
+  }
+}
+
+class _LengkapiWaScreen extends StatefulWidget {
+  const _LengkapiWaScreen();
+  @override
+  State<_LengkapiWaScreen> createState() => _LengkapiWaScreenState();
+}
+
+class _LengkapiWaScreenState extends State<_LengkapiWaScreen> {
+  final _wa = TextEditingController();
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _wa.dispose();
+    super.dispose();
+  }
+
+  Future<void> _simpan() async {
+    FocusScope.of(context).unfocus();
+    final wa = _wa.text.trim();
+    if (wa.length < 8) {
+      setState(() => _error = 'Nomor WhatsApp tidak valid.');
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final res = await Api.lengkapiWa(wa);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (res.ok) {
+      Navigator.of(context).pop(true);
+    } else {
+      setState(() => _error = res.error);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: kBg,
+      appBar: AppBar(title: const Text('Lengkapi Nomor WhatsApp')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: kBrandGradient,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.chat_outlined, color: Colors.white, size: 28),
+                SizedBox(height: 10),
+                Text('Satu langkah lagi', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18)),
+                SizedBox(height: 4),
+                Text('Tambahkan nomor WhatsApp agar mitra bisa menghubungimu saat kebutuhanmu cocok.', style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          TextField(
+            controller: _wa,
+            keyboardType: TextInputType.phone,
+            style: const TextStyle(fontSize: 15, color: kInk),
+            decoration: sekitaInput('Nomor WhatsApp', Icons.phone_outlined),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 12),
+            Text(_error!, style: const TextStyle(color: _danger, fontSize: 13)),
+          ],
+          const SizedBox(height: 20),
+          SekitaGradientButton(
+            label: 'Simpan & Lanjut',
+            busy: _busy,
+            onTap: _busy ? null : _simpan,
+          ),
+        ],
+      ),
     );
   }
 }
