@@ -387,22 +387,45 @@ class _MitraDetailScreenState extends State<MitraDetailScreen> {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-        child: SizedBox(
-          height: 52,
-          child: FilledButton.icon(
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF25D366),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: 52,
+              width: double.infinity,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF25D366),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: m.wa.isEmpty
+                    ? null
+                    : () => openWa(m.wa,
+                        text: 'Halo ${m.displayName}, saya menemukan Anda di aplikasi Sekita. '
+                            'Saya tertarik dengan jasa ${m.kategori}.'),
+                icon: const Icon(Icons.chat, color: Colors.white, size: 22),
+                label: const Text('WhatsApp',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+              ),
             ),
-            onPressed: m.wa.isEmpty
-                ? null
-                : () => openWa(m.wa,
-                    text: 'Halo ${m.displayName}, saya menemukan Anda di aplikasi Sekita. '
-                        'Saya tertarik dengan jasa ${m.kategori}.'),
-            icon: const Icon(Icons.chat, color: Colors.white, size: 22),
-            label: const Text('WhatsApp',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-          ),
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Icon(Icons.warning_amber_rounded, size: 14, color: Color(0xFFDC2626)),
+                SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Transaksi & kesepakatan dilakukan langsung antara kamu & mitra. Sekita hanya mempertemukan, bukan pihak dalam transaksi, dan tidak bertanggung jawab atas hasilnya. Cek dulu profil & portofolio sebelum bertransaksi.',
+                    style: TextStyle(
+                        fontSize: 10.5,
+                        height: 1.35,
+                        color: Color(0xFFB91C1C)),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
