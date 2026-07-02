@@ -48,6 +48,17 @@ android {
 
     buildTypes {
         release {
+            // PENTING: Nonaktifkan R8/minifikasi & shrink resources.
+            // Di AGP 9, R8 aktif default untuk build release. R8 mengacak nama
+            // class Room (WorkDatabase_Impl) yang diakses via reflection oleh
+            // WorkManager, sehingga androidx.startup InitializationProvider gagal
+            // membuat WorkDatabase -> FATAL EXCEPTION / force close saat app dibuka.
+            // OneSignal menarik WorkManager, jadi ini wajib dimatikan.
+            // (Untuk rilis Play Store dgn ukuran lebih kecil, bisa aktifkan lagi
+            //  minify TAPI dengan keep rules Room/WorkManager/OneSignal di proguard-rules.pro.)
+            isMinifyEnabled = false
+            isShrinkResources = false
+
             // Pakai signing release bila key.properties tersedia,
             // selain itu fallback ke debug agar `flutter run --release` tetap jalan.
             signingConfig = if (hasKeystore) {
