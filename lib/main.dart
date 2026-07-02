@@ -244,6 +244,7 @@ class _RootNavState extends State<RootNav> {
       body: IndexedStack(index: _mi, children: pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _mi,
+        height: 60,
         onDestinationSelected: (v) => mitraTab.value = v,
         destinations: const [
           NavigationDestination(icon: Icon(Icons.work_outline), selectedIcon: Icon(Icons.work), label: 'Lead'),
