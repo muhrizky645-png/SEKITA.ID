@@ -23,6 +23,7 @@ class _MitraDetailScreenState extends State<MitraDetailScreen> {
     _porto = Api.fetchPortfolio(widget.mitra.id);
     _ulasan = Api.fetchUlasan(widget.mitra.id);
     _cover = Api.fetchCover(widget.mitra.id);
+    Api.catatLihat(widget.mitra.id); // hitung 1 kali dilihat
   }
 
   void _shareProfile(Mitra m) {
