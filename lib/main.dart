@@ -225,7 +225,7 @@ class _RootNavState extends State<RootNav> {
         active: onPosting,
         onTap: () => _go(2),
       ),
-      floatingActionButtonLocation: const _LoweredDockedFab(12),
+      floatingActionButtonLocation: const _LoweredDockedFab(8),
       bottomNavigationBar: _BottomBar(
         selectedIndex: _i,
         onSelect: _go,
@@ -282,8 +282,8 @@ class _PostingFab extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOut,
-        width: 48,
-        height: 48,
+        width: 46,
+        height: 46,
         decoration: BoxDecoration(
           color: active ? kBrandPurple : kBrand,
           shape: BoxShape.circle,
@@ -305,7 +305,9 @@ class _PostingFab extends StatelessWidget {
   }
 }
 
-// -- Bottom bar dengan cekungan (notch) untuk FAB Posting yang selalu ada --
+// -- Bottom bar dengan cekungan (notch) untuk FAB Posting yang selalu ada.
+// Tinggi background dikontrol eksplisit (height) + padding 0 supaya latar
+// putihnya mepet dengan ikon, tidak menyisakan ruang kosong berlebih. --
 class _BottomBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelect;
@@ -321,17 +323,16 @@ class _BottomBar extends StatelessWidget {
       notchMargin: 5,
       color: Colors.white,
       elevation: 10,
-      child: SizedBox(
-        height: 48,
-        child: Row(
-          children: [
-            _item(Icons.home_outlined, Icons.home, 'Beranda', 0),
-            _item(Icons.search_outlined, Icons.search, 'Cari', 1),
-            _middle(),
-            _item(Icons.assignment_outlined, Icons.assignment, 'Kebutuhan', 3),
-            _item(Icons.person_outline, Icons.person, 'Akun', 4),
-          ],
-        ),
+      height: 52,
+      padding: EdgeInsets.zero,
+      child: Row(
+        children: [
+          _item(Icons.home_outlined, Icons.home, 'Beranda', 0),
+          _item(Icons.search_outlined, Icons.search, 'Cari', 1),
+          _middle(),
+          _item(Icons.assignment_outlined, Icons.assignment, 'Kebutuhan', 3),
+          _item(Icons.person_outline, Icons.person, 'Akun', 4),
+        ],
       ),
     );
   }
@@ -346,6 +347,7 @@ class _BottomBar extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
+            const Spacer(),
             Text(
               'Posting',
               style: TextStyle(
