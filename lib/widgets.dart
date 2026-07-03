@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'core.dart';
 import 'models.dart';
 
-/// Kartu mitra bergaya web sekita.id: cover di atas, avatar overlap, nama +
-/// badge tier verifikasi, chip kategori, lokasi & rating. Tap -> detail.
+/// Kartu mitra bergaya web sekita.id (grid 2 kolom): gambar/logo/ikon kategori
+/// di atas (kotak), lalu nama + centang tier, chip kategori, lokasi & rating.
 class MitraCard extends StatelessWidget {
   final Mitra m;
   final VoidCallback onTap;
@@ -18,162 +18,183 @@ class MitraCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final spon = surface == null ? m.promoted > 0 : sponsorOn(m, surface!);
     final tier = verifTierFor(m.verified);
-    final cover = m.portfolioThumb.isNotEmpty ? m.portfolioThumb.first : '';
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      clipBehavior: Clip.antiAlias,
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: const BorderSide(color: kLine),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: kLine),
       ),
-      child: InkWell(
-        onTap: onTap,
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Cover + avatar overlap (gaya web)
-                Stack(
-                  clipBehavior: Clip.none,
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Gambar cover / logo / ikon kategori (kotak, seperti web)
+              Expanded(
+                child: Stack(
                   children: [
-                    SizedBox(
-                      height: 92,
-                      width: double.infinity,
-                      child: cover.isEmpty
-                          ? const DecoratedBox(
-                              decoration: BoxDecoration(gradient: kBrandGradient))
-                          : SekitaImage(cover, fit: BoxFit.cover),
+                    Positioned.fill(child: _cover()),
+                    if (m.perdanaNo != null)
+                      Positioned(top: 8, right: 8, child: _perdanaPill()),
+                    if (spon)
+                      Positioned(bottom: 6, right: 8, child: _sponsorTag()),
+                  ],
+                ),
+              ),
+              // Info
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            m.displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w700, fontSize: 13.5),
+                          ),
+                        ),
+                        if (m.verified > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 3),
+                            child: Icon(Icons.verified,
+                                size: 14, color: tier.color),
+                          ),
+                      ],
                     ),
-                    Positioned(
-                      left: 12,
-                      bottom: -24,
-                      child: Container(
-                        width: 60,
-                        height: 60,
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
+                    const SizedBox(height: 5),
+                    _catChip(),
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on_outlined,
+                            size: 12, color: Colors.grey[500]),
+                        const SizedBox(width: 2),
+                        Flexible(
+                          child: Text(
+                            m.lokasi.isEmpty ? '-' : m.lokasi,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style:
+                                TextStyle(color: Colors.grey[600], fontSize: 11),
+                          ),
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(13),
-                          child: MitraAvatar(m: m),
-                        ),
-                      ),
+                        if (m.rating > 0) ...[
+                          const SizedBox(width: 6),
+                          const Icon(Icons.star,
+                              size: 12, color: Color(0xFFF59E0B)),
+                          const SizedBox(width: 2),
+                          Text(m.rating.toStringAsFixed(1),
+                              style: const TextStyle(
+                                  fontSize: 11, fontWeight: FontWeight.w700)),
+                        ],
+                      ],
                     ),
                   ],
                 ),
-                // Info
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 30, 12, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        m.displayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w800, fontSize: 15.5),
-                      ),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEFF4FF),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              m.kategori,
-                              style: const TextStyle(
-                                  fontSize: 11.5,
-                                  color: kBrand,
-                                  fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                          if (m.verified > 0)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: tier.color.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.verified,
-                                      size: 12, color: tier.color),
-                                  const SizedBox(width: 3),
-                                  Text('Mitra ${tier.label}',
-                                      style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w700,
-                                          color: tier.color)),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(Icons.location_on_outlined,
-                              size: 14, color: Colors.grey[500]),
-                          const SizedBox(width: 2),
-                          Flexible(
-                            child: Text(
-                              m.lokasi.isEmpty ? '-' : m.lokasi,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                  color: Colors.grey[600], fontSize: 12),
-                            ),
-                          ),
-                          if (m.rating > 0) ...[
-                            const SizedBox(width: 8),
-                            const Icon(Icons.star,
-                                size: 14, color: Color(0xFFF59E0B)),
-                            const SizedBox(width: 2),
-                            Text(m.rating.toStringAsFixed(1),
-                                style: const TextStyle(
-                                    fontSize: 12, fontWeight: FontWeight.w700)),
-                          ],
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (spon)
-              Positioned(
-                right: 12,
-                bottom: 10,
-                child: Text(
-                  'Sponsor',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontStyle: FontStyle.italic,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.withOpacity(0.5),
-                  ),
-                ),
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
+
+  // Gambar kartu: foto portofolio (cover) > logo/avatar (contain) > ikon kategori.
+  Widget _cover() {
+    if (m.portfolioThumb.isNotEmpty) {
+      return SekitaImage(m.portfolioThumb.first, fit: BoxFit.cover);
+    }
+    if (m.avatar.isNotEmpty) {
+      return Container(
+        color: Colors.white,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(16),
+        child: SekitaImage(m.avatar, fit: BoxFit.contain),
+      );
+    }
+    return Container(
+      color: const Color(0xFFEEF2F7),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(24),
+      child: SekitaImage(catIconPath(m.kategori), fit: BoxFit.contain),
+    );
+  }
+
+  Widget _catChip() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF4FF),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 12,
+            height: 12,
+            child: SekitaImage(catIconPath(m.kategori), fit: BoxFit.contain),
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              m.kategori,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  fontSize: 10.5, color: kBrand, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _perdanaPill() => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFDE9C8),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFF5CE93)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.workspace_premium, size: 11, color: Color(0xFFB45309)),
+            SizedBox(width: 3),
+            Text('Perdana',
+                style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFB45309))),
+          ],
+        ),
+      );
+
+  Widget _sponsorTag() => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.82),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          'Sponsor',
+          style: TextStyle(
+            fontSize: 9,
+            fontStyle: FontStyle.italic,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.withOpacity(0.9),
+          ),
+        ),
+      );
 }
 
 class MitraAvatar extends StatelessWidget {
