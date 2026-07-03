@@ -3,25 +3,10 @@ import 'package:flutter/material.dart';
 import 'core.dart';
 import 'models.dart';
 
-/// Deteksi apakah nilai avatar sebenarnya cuma ikon kategori default (bukan foto
-/// yang diunggah mitra). Backend mengisi avatar dgn path ikon kategori (mis.
-/// "assets/img/cat/terapis.png") saat mitra belum mengunggah foto profil.
-bool _isCategoryIconAvatar(String s) {
-  final v = s.toLowerCase();
-  return v.contains('/cat/') || v.contains('assets/img/cat');
-}
-
-/// True bila mitra sudah mengunggah foto profil asli (bukan kosong & bukan ikon
-/// kategori default).
-bool _hasRealPhoto(Mitra m) {
-  final av = m.avatar.trim();
-  return av.isNotEmpty && !_isCategoryIconAvatar(av);
-}
-
 /// Kartu mitra bergaya web sekita.id (grid 2 kolom): foto profil / ikon kategori
 /// di atas (kotak), lalu nama + centang tier, chip kategori, lokasi & rating.
-/// - Sudah upload foto profil  -> foto tampil PENUH (cover).
-/// - Belum ada foto profil     -> ikon kategori KECIL di tengah latar abu muda.
+/// - Sudah upload foto profil (berhasil dimuat) -> foto tampil PENUH (cover).
+/// - Belum ada foto / foto gagal dimuat        -> ikon kategori KECIL di tengah.
 class MitraCard extends StatelessWidget {
   final Mitra m;
   final VoidCallback onTap;
@@ -49,11 +34,11 @@ class MitraCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Area gambar: foto profil / ikon kategori (kotak, seperti web)
+              // Area gambar: foto profil (penuh) / ikon kategori kecil
               Expanded(
                 child: Stack(
                   children: [
-                    Positioned.fill(child: _cover()),
+                    Positioned.fill(child: _CardPhoto(m: m)),
                     if (m.perdanaNo != null)
                       Positioned(top: 8, right: 8, child: _perdanaPill()),
                     if (spon)
@@ -124,25 +109,6 @@ class MitraCard extends StatelessWidget {
     );
   }
 
-  // Area gambar kartu:
-  // - Foto profil asli -> tampil PENUH (cover) mengisi kotak.
-  // - Belum ada foto   -> ikon kategori KECIL & contain di tengah latar abu muda
-  //   (seperti web). Tidak memakai foto portofolio.
-  Widget _cover() {
-    if (_hasRealPhoto(m)) {
-      return MitraAvatar(m: m, fit: BoxFit.cover);
-    }
-    return Container(
-      color: const Color(0xFFEEF2F7),
-      alignment: Alignment.center,
-      child: SizedBox(
-        width: 54,
-        height: 54,
-        child: SekitaImage(catIconPath(m.kategori), fit: BoxFit.contain),
-      ),
-    );
-  }
-
   Widget _catChip() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -201,6 +167,61 @@ class MitraCard extends StatelessWidget {
           ),
         ),
       );
+}
+
+/// Foto untuk KARTU mitra.
+/// - Foto profil asli yang BERHASIL dimuat -> tampil PENUH (cover).
+/// - avatar kosong / base64 rusak / URL gagal dimuat -> ikon kategori KECIL
+///   (54px) di tengah latar abu muda. Foto portofolio TIDAK dipakai di kartu.
+class _CardPhoto extends StatelessWidget {
+  final Mitra m;
+  const _CardPhoto({required this.m});
+
+  // Placeholder "belum ada foto": ikon kategori kecil di tengah (seperti web).
+  Widget _small() => Container(
+        color: const Color(0xFFEEF2F7),
+        alignment: Alignment.center,
+        child: SizedBox(
+          width: 54,
+          height: 54,
+          child: SekitaImage(catIconPath(m.kategori), fit: BoxFit.contain),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final src = m.avatar.trim();
+    if (src.isEmpty) return _small();
+
+    // Foto base64 inline.
+    if (src.startsWith('data:image')) {
+      try {
+        final b64 = src.substring(src.indexOf(',') + 1);
+        return Image.memory(
+          base64Decode(b64),
+          fit: BoxFit.cover,
+          gaplessPlayback: true,
+          errorBuilder: (_, __, ___) => _small(),
+        );
+      } catch (_) {
+        return _small();
+      }
+    }
+
+    // URL biasa / relatif -> normalize, muat, dan jika GAGAL tampilkan ikon kecil.
+    var url = src;
+    if (!url.startsWith('http')) {
+      final host = 'https://' + 'sekita.id/';
+      url = host + url.replaceFirst(RegExp(r'^/'), '');
+    }
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => _small(),
+      loadingBuilder: (c, child, progress) =>
+          progress == null ? child : Container(color: const Color(0xFFE5E7EB)),
+    );
+  }
 }
 
 class MitraAvatar extends StatelessWidget {
