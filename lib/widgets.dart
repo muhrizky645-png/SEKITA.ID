@@ -3,9 +3,25 @@ import 'package:flutter/material.dart';
 import 'core.dart';
 import 'models.dart';
 
-/// Kartu mitra bergaya web sekita.id (grid 2 kolom): foto profil/ikon kategori
-/// tampil kecil & contain di tengah kotak abu muda (seperti web), lalu nama +
-/// centang tier, chip kategori, lokasi & rating.
+/// Deteksi apakah nilai avatar sebenarnya cuma ikon kategori default (bukan foto
+/// yang diunggah mitra). Backend mengisi avatar dgn path ikon kategori (mis.
+/// "assets/img/cat/terapis.png") saat mitra belum mengunggah foto profil.
+bool _isCategoryIconAvatar(String s) {
+  final v = s.toLowerCase();
+  return v.contains('/cat/') || v.contains('assets/img/cat');
+}
+
+/// True bila mitra sudah mengunggah foto profil asli (bukan kosong & bukan ikon
+/// kategori default).
+bool _hasRealPhoto(Mitra m) {
+  final av = m.avatar.trim();
+  return av.isNotEmpty && !_isCategoryIconAvatar(av);
+}
+
+/// Kartu mitra bergaya web sekita.id (grid 2 kolom): foto profil / ikon kategori
+/// di atas (kotak), lalu nama + centang tier, chip kategori, lokasi & rating.
+/// - Sudah upload foto profil  -> foto tampil PENUH (cover).
+/// - Belum ada foto profil     -> ikon kategori KECIL di tengah latar abu muda.
 class MitraCard extends StatelessWidget {
   final Mitra m;
   final VoidCallback onTap;
@@ -108,17 +124,22 @@ class MitraCard extends StatelessWidget {
     );
   }
 
-  // Area gambar kartu (seperti web): latar abu muda, gambar KECIL & contain di
-  // tengah. Foto profil (avatar) diprioritaskan; kalau kosong pakai ikon
-  // kategori. Tidak memakai foto portofolio, tidak mengisi penuh kotak.
+  // Area gambar kartu:
+  // - Foto profil asli -> tampil PENUH (cover) mengisi kotak.
+  // - Belum ada foto   -> ikon kategori KECIL & contain di tengah latar abu muda
+  //   (seperti web). Tidak memakai foto portofolio.
   Widget _cover() {
-    final Widget img = m.avatar.isNotEmpty
-        ? MitraAvatar(m: m, fit: BoxFit.contain)
-        : SekitaImage(catIconPath(m.kategori), fit: BoxFit.contain);
+    if (_hasRealPhoto(m)) {
+      return MitraAvatar(m: m, fit: BoxFit.cover);
+    }
     return Container(
       color: const Color(0xFFEEF2F7),
       alignment: Alignment.center,
-      child: SizedBox(width: 64, height: 64, child: img),
+      child: SizedBox(
+        width: 54,
+        height: 54,
+        child: SekitaImage(catIconPath(m.kategori), fit: BoxFit.contain),
+      ),
     );
   }
 
@@ -184,8 +205,7 @@ class MitraCard extends StatelessWidget {
 
 class MitraAvatar extends StatelessWidget {
   final Mitra m;
-  /// Cara gambar mengisi kotak. Default cover (isi penuh) untuk pemakaian lama;
-  /// kartu grid memakai contain agar gambar tampil kecil di tengah seperti web.
+  /// Cara gambar mengisi kotak. Default cover (isi penuh).
   final BoxFit fit;
   const MitraAvatar({super.key, required this.m, this.fit = BoxFit.cover});
 
