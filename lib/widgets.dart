@@ -108,7 +108,7 @@ class MitraCard extends StatelessWidget {
   }
 
   // Gambar kartu: foto profil mitra (avatar). Kalau kosong -> kotak biru muda
-  // + ikon kategori (tidak memakai foto portofolio).
+  // + ikon kategori berukuran kecil (tidak memakai foto portofolio).
   Widget _cover() {
     if (m.avatar.isNotEmpty) {
       return MitraAvatar(m: m);
@@ -116,8 +116,11 @@ class MitraCard extends StatelessWidget {
     return Container(
       color: const Color(0xFFEEF2F7),
       alignment: Alignment.center,
-      padding: const EdgeInsets.all(24),
-      child: SekitaImage(catIconPath(m.kategori), fit: BoxFit.contain),
+      child: SizedBox(
+        width: 56,
+        height: 56,
+        child: SekitaImage(catIconPath(m.kategori), fit: BoxFit.contain),
+      ),
     );
   }
 
@@ -151,25 +154,16 @@ class MitraCard extends StatelessWidget {
     );
   }
 
+  // Badge Perdana: ikon saja (tanpa tulisan) - lencana bulat emas.
   Widget _perdanaPill() => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: const Color(0xFFFDE9C8),
-          borderRadius: BorderRadius.circular(20),
+          shape: BoxShape.circle,
           border: Border.all(color: const Color(0xFFF5CE93)),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.workspace_premium, size: 11, color: Color(0xFFB45309)),
-            SizedBox(width: 3),
-            Text('Perdana',
-                style: TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFFB45309))),
-          ],
-        ),
+        child: const Icon(Icons.workspace_premium,
+            size: 14, color: Color(0xFFB45309)),
       );
 
   Widget _sponsorTag() => Container(
