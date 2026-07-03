@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Mode gelap Android 12+: sama, logo Sekita di splash sistem lalu ke loading. -->
+<!-- Mode gelap Android 12+: sama, logo Sekita di splash sistem dgn warna tengah
+     gradient brand (#504FEC), lalu langsung ke layar loading Flutter. -->
 <resources>
     <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
         <item name="android:windowBackground">@drawable/launch_background</item>
-        <item name="android:windowSplashScreenBackground">#2563EB</item>
+        <item name="android:windowSplashScreenBackground">#504FEC</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
     </style>
     <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
