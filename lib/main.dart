@@ -136,6 +136,63 @@ class SekitaApp extends StatelessWidget {
   }
 }
 
+// Splash bergaya loading: gradient brand + logo + spinner. Ditampilkan selagi
+// sesi dipulihkan supaya tidak ada kedip layar putih saat app dibuka.
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(gradient: kBrandGradient),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Image.asset(
+                  'assets/icon/sekita_icon.png',
+                  width: 104,
+                  height: 104,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 104,
+                    height: 104,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: const Icon(Icons.search, color: kBrand, size: 52),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text('Sekita',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800)),
+              const SizedBox(height: 6),
+              const Text('Jasa lokal, dekat denganmu',
+                  style: TextStyle(color: Color(0xFFE0E7FF), fontSize: 13)),
+              const SizedBox(height: 30),
+              const SizedBox(
+                width: 26,
+                height: 26,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.6,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class RootNav extends StatefulWidget {
   const RootNav({super.key});
   @override
@@ -147,6 +204,8 @@ class _RootNavState extends State<RootNav> {
   int _i = 0;
   // Mode mitra: 0=Lead 1=Riwayat 2=Toko 3=Akun Mitra
   int _mi = 0;
+  // Splash aktif sampai sesi selesai dipulihkan.
+  bool _ready = false;
 
   @override
   void initState() {
@@ -159,9 +218,11 @@ class _RootNavState extends State<RootNav> {
 
   // Pulihkan sesi (pembeli/mitra) saat app dibuka, lalu setState agar nav sesuai.
   Future<void> _restore() async {
-    await Api.me();
-    await _syncNotifTags();
-    if (mounted) setState(() {});
+    try {
+      await Api.me();
+      await _syncNotifTags();
+    } catch (_) {}
+    if (mounted) setState(() => _ready = true);
   }
 
   void _onMode() {
@@ -205,6 +266,7 @@ class _RootNavState extends State<RootNav> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_ready) return const _SplashScreen();
     return Api.mode.value == 'mitra' ? _buildMitra() : _buildPembeli();
   }
 
