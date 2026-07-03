@@ -215,19 +215,19 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(13),
                 child: Image.asset(
                   'assets/icon/sekita_icon.png',
-                  width: 40,
-                  height: 40,
+                  width: 52,
+                  height: 52,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
-                    width: 40,
-                    height: 40,
+                    width: 52,
+                    height: 52,
                     decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(10)),
-                    child: const Icon(Icons.search, color: kBrand, size: 22),
+                        borderRadius: BorderRadius.circular(13)),
+                    child: const Icon(Icons.search, color: kBrand, size: 28),
                   ),
                 ),
               ),
