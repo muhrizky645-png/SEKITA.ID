@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Latar peluncuran = gradient brand (ungu -> biru), sama dgn layar loading
-     Flutter (_SplashScreen). Tidak ada logo di sini supaya begitu app dibuka
-     langsung mengalir mulus ke layar loading. -->
+<!-- Latar peluncuran: gradient brand (ungu -> biru) + logo Sekita di tengah,
+     sama dgn layar loading Flutter (_SplashScreen) supaya mulus. Logo diambil
+     dari drawable/splash_logo.png (di-upload manual, 1152x1152, konten di
+     tengah ~768px). -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
@@ -11,5 +12,10 @@
                 android:angle="315"
                 android:type="linear"/>
         </shape>
+    </item>
+    <item android:gravity="center">
+        <bitmap
+            android:gravity="center"
+            android:src="@drawable/splash_logo"/>
     </item>
 </layer-list>
