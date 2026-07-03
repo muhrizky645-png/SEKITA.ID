@@ -108,7 +108,7 @@ class MitraCard extends StatelessWidget {
   }
 
   // Gambar kartu: foto profil mitra (avatar). Kalau kosong -> kotak biru muda
-  // + ikon kategori kecil (seperti web, tidak memakai foto portofolio).
+  // + ikon kategori sangat kecil (seperti web, tidak memakai foto portofolio).
   Widget _cover() {
     if (m.avatar.isNotEmpty) {
       return MitraAvatar(m: m);
@@ -117,8 +117,8 @@ class MitraCard extends StatelessWidget {
       color: const Color(0xFFEEF2F7),
       alignment: Alignment.center,
       child: SizedBox(
-        width: 40,
-        height: 40,
+        width: 28,
+        height: 28,
         child: SekitaImage(catIconPath(m.kategori), fit: BoxFit.contain),
       ),
     );
