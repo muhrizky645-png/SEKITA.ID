@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'core.dart';
 import 'models.dart';
 
-/// Kartu mitra bergaya web sekita.id (grid 2 kolom): gambar/logo/ikon kategori
+/// Kartu mitra bergaya web sekita.id (grid 2 kolom): foto profil/ikon kategori
 /// di atas (kotak), lalu nama + centang tier, chip kategori, lokasi & rating.
 class MitraCard extends StatelessWidget {
   final Mitra m;
@@ -32,7 +32,7 @@ class MitraCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Gambar cover / logo / ikon kategori (kotak, seperti web)
+              // Foto profil / ikon kategori (kotak, seperti web)
               Expanded(
                 child: Stack(
                   children: [
@@ -107,18 +107,11 @@ class MitraCard extends StatelessWidget {
     );
   }
 
-  // Gambar kartu: foto portofolio (cover) > logo/avatar (contain) > ikon kategori.
+  // Gambar kartu: foto profil mitra (avatar). Kalau kosong -> kotak biru muda
+  // + ikon kategori (tidak memakai foto portofolio).
   Widget _cover() {
-    if (m.portfolioThumb.isNotEmpty) {
-      return SekitaImage(m.portfolioThumb.first, fit: BoxFit.cover);
-    }
     if (m.avatar.isNotEmpty) {
-      return Container(
-        color: Colors.white,
-        alignment: Alignment.center,
-        padding: const EdgeInsets.all(16),
-        child: SekitaImage(m.avatar, fit: BoxFit.contain),
-      );
+      return MitraAvatar(m: m);
     }
     return Container(
       color: const Color(0xFFEEF2F7),
