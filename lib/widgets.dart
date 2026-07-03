@@ -4,7 +4,8 @@ import 'core.dart';
 import 'models.dart';
 
 /// Kartu mitra bergaya web sekita.id (grid 2 kolom): foto profil/ikon kategori
-/// di atas (kotak), lalu nama + centang tier, chip kategori, lokasi & rating.
+/// tampil kecil & contain di tengah kotak abu muda (seperti web), lalu nama +
+/// centang tier, chip kategori, lokasi & rating.
 class MitraCard extends StatelessWidget {
   final Mitra m;
   final VoidCallback onTap;
@@ -32,7 +33,7 @@ class MitraCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Foto profil / ikon kategori (kotak, seperti web)
+              // Area gambar: foto profil / ikon kategori (kotak, seperti web)
               Expanded(
                 child: Stack(
                   children: [
@@ -107,20 +108,17 @@ class MitraCard extends StatelessWidget {
     );
   }
 
-  // Gambar kartu: foto profil mitra (avatar). Kalau kosong -> kotak biru muda
-  // + ikon kategori sangat kecil (seperti web, tidak memakai foto portofolio).
+  // Area gambar kartu (seperti web): latar abu muda, gambar KECIL & contain di
+  // tengah. Foto profil (avatar) diprioritaskan; kalau kosong pakai ikon
+  // kategori. Tidak memakai foto portofolio, tidak mengisi penuh kotak.
   Widget _cover() {
-    if (m.avatar.isNotEmpty) {
-      return MitraAvatar(m: m);
-    }
+    final Widget img = m.avatar.isNotEmpty
+        ? MitraAvatar(m: m, fit: BoxFit.contain)
+        : SekitaImage(catIconPath(m.kategori), fit: BoxFit.contain);
     return Container(
       color: const Color(0xFFEEF2F7),
       alignment: Alignment.center,
-      child: SizedBox(
-        width: 28,
-        height: 28,
-        child: SekitaImage(catIconPath(m.kategori), fit: BoxFit.contain),
-      ),
+      child: SizedBox(width: 64, height: 64, child: img),
     );
   }
 
@@ -186,7 +184,10 @@ class MitraCard extends StatelessWidget {
 
 class MitraAvatar extends StatelessWidget {
   final Mitra m;
-  const MitraAvatar({super.key, required this.m});
+  /// Cara gambar mengisi kotak. Default cover (isi penuh) untuk pemakaian lama;
+  /// kartu grid memakai contain agar gambar tampil kecil di tengah seperti web.
+  final BoxFit fit;
+  const MitraAvatar({super.key, required this.m, this.fit = BoxFit.cover});
 
   Widget _catIcon() => Container(
         color: const Color(0xFFEFF4FF),
@@ -208,7 +209,7 @@ class MitraAvatar extends StatelessWidget {
       try {
         final b64 = src.substring(src.indexOf(',') + 1);
         return Image.memory(base64Decode(b64),
-            fit: BoxFit.cover, gaplessPlayback: true,
+            fit: fit, gaplessPlayback: true,
             errorBuilder: (_, __, ___) => _catIcon());
       } catch (_) {
         return _catIcon();
@@ -223,7 +224,7 @@ class MitraAvatar extends StatelessWidget {
     }
     return Image.network(
       url,
-      fit: BoxFit.cover,
+      fit: fit,
       errorBuilder: (_, __, ___) => _catIcon(),
       loadingBuilder: (c, child, progress) =>
           progress == null ? child : Container(color: const Color(0xFFE5E7EB)),
