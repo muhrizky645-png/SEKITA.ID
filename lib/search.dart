@@ -158,11 +158,20 @@ class _SearchScreenState extends State<SearchScreen> {
               Expanded(
                 child: list.isEmpty
                     ? const Center(child: Text('Tidak ada mitra yang cocok.'))
-                    : ListView(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        children: list
-                            .map((m) => MitraCard(m: m, surface: 'kategori', onTap: () => _openDetail(m)))
-                            .toList(),
+                    : GridView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 0.68,
+                        ),
+                        itemCount: list.length,
+                        itemBuilder: (_, i) => MitraCard(
+                            m: list[i],
+                            surface: 'kategori',
+                            onTap: () => _openDetail(list[i])),
                       ),
               ),
             ],
@@ -172,7 +181,7 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // ── Bar kategori dengan icon + jumlah ────────────────────────
+  // Bar kategori dengan icon + jumlah
   Widget _categoryBar(List<String> cats, Map<String, int> counts, int total) {
     return SizedBox(
       height: 52,
@@ -257,7 +266,7 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // ── Bar filter cepat + lokasi ───────────────────────────
+  // Bar filter cepat + lokasi
   Widget _filterBar(List<String> locs) {
     return SizedBox(
       height: 46,
@@ -337,7 +346,7 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // ── Baris jumlah hasil + urutkan ─────────────────────────
+  // Baris jumlah hasil + urutkan
   Widget _resultBar(int n) {
     const labels = {
       'rekomendasi': 'Rekomendasi',
