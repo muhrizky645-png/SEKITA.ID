@@ -125,7 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
             future: _mitraFuture,
             builder: (context, snap) {
               if (snap.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(child: SekitaDots());
               }
               if (snap.hasError) return _ErrorView(onRetry: _reload);
               final all = snap.data ?? [];
@@ -445,11 +445,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (loading)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 28),
-                child: Center(
-                    child: SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2))),
+                child: Center(child: SekitaDots(size: 8)),
               )
             else if (list.isEmpty)
               _emptyKebutuhanBox()

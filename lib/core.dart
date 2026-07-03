@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'models.dart';
@@ -84,6 +85,74 @@ InputDecoration sekitaInput(String label, IconData icon, {bool enabled = true, S
   );
 }
 
+// Loader kustom Sekita: 3 titik memantul (naik-turun) bergiliran.
+// Dipakai menggantikan CircularProgressIndicator default di layar loading.
+class SekitaDots extends StatefulWidget {
+  final Color color;
+  final double size;
+  const SekitaDots({super.key, this.color = kBrand, this.size = 10});
+
+  @override
+  State<SekitaDots> createState() => _SekitaDotsState();
+}
+
+class _SekitaDotsState extends State<SekitaDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.size;
+    final amp = s * 0.9; // tinggi pantulan
+    return SizedBox(
+      height: s + amp,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: List.generate(3, (i) {
+          return AnimatedBuilder(
+            animation: _c,
+            builder: (context, _) {
+              // Fase tiap titik digeser supaya memantul bergiliran.
+              final t = (_c.value + i * 0.18) % 1.0;
+              final dy = -math.sin(t * math.pi) * amp;
+              return Padding(
+                padding: EdgeInsets.symmetric(horizontal: s * 0.3),
+                child: Transform.translate(
+                  offset: Offset(0, dy),
+                  child: Container(
+                    width: s,
+                    height: s,
+                    decoration: BoxDecoration(
+                      color: widget.color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        }),
+      ),
+    );
+  }
+}
+
 // Tombol utama ber-gradient (ungu -> biru) dengan status loading + ripple.
 class SekitaGradientButton extends StatelessWidget {
   final String label;
@@ -122,7 +191,7 @@ class SekitaGradientButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             child: Center(
               child: busy
-                  ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? const SekitaDots(color: Colors.white, size: 9)
                   : Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [

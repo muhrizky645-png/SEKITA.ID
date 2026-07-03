@@ -136,8 +136,8 @@ class SekitaApp extends StatelessWidget {
   }
 }
 
-// Splash bergaya loading: gradient brand + logo + spinner. Ditampilkan selagi
-// sesi dipulihkan supaya tidak ada kedip layar putih saat app dibuka.
+// Splash bergaya loading: gradient brand + logo + loader titik. Ditampilkan
+// selagi sesi dipulihkan supaya tidak ada kedip layar putih saat app dibuka.
 class _SplashScreen extends StatelessWidget {
   const _SplashScreen();
   @override
@@ -177,14 +177,7 @@ class _SplashScreen extends StatelessWidget {
               const Text('Jasa lokal, dekat denganmu',
                   style: TextStyle(color: Color(0xFFE0E7FF), fontSize: 13)),
               const SizedBox(height: 30),
-              const SizedBox(
-                width: 26,
-                height: 26,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.6,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
+              const SekitaDots(color: Colors.white, size: 11),
             ],
           ),
         ),
