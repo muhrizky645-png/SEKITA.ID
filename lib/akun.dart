@@ -1054,14 +1054,14 @@ const List<_FaqGroup> _faqData = [
   _FaqGroup('Untuk Pelanggan', [
     _Faq('Apa itu Sekita?', 'Sekita adalah platform yang mempertemukan kamu dengan penyedia jasa lokal di Yogyakarta & sekitarnya. Cukup posting kebutuhanmu secara gratis, lalu penyedia jasa yang sesuai akan datang menghubungimu. Slogannya: Posting kebutuhanmu. Biarkan ahlinya datang.'),
     _Faq('Bagaimana cara posting kebutuhan?', 'Buka tab Posting, isi jenis kebutuhan, lokasi, perkiraan budget, dan deskripsi singkat. Setelah diposting, kebutuhanmu tampil di Sekita dan mitra yang relevan bisa menghubungimu via WhatsApp. Catatan: kalau kamu sudah punya akun pembeli, verifikasi email & WhatsApp dulu di halaman akun supaya bisa posting.'),
-    _Faq('Apakah memakai Sekita gratis?', 'Buat pelanggan, 100% gratis - posting kebutuhan dan menerima penawaran tidak dipungut biaya. Mitra (penyedia jasa) hanya membayar paket Kontak untuk membuka data pelanggan.'),
+    _Faq('Apakah memakai Sekita gratis?', 'Buat pelanggan, 100% gratis - posting kebutuhan dan menerima penawaran tidak dipungut biaya. Mitra (penyedia jasa) menggunakan paket Kontak untuk membuka data pelanggan.'),
     _Faq('Bagaimana penyedia jasa menghubungi saya?', 'Mitra yang tertarik akan membuka kontakmu lalu menghubungi langsung lewat WhatsApp. Nomormu tidak ditampilkan bebas - hanya terbuka saat mitra menekan tombol \"Hubungi\", dan setiap pembukaan tercatat.'),
     _Faq('Bagaimana cara memberi ulasan?', 'Buka dashboard akunmu, tandai kebutuhan yang sudah beres dengan \"Tandai Selesai\", lalu tombol \"Beri ulasan\" akan muncul. Ulasanmu membantu pelanggan lain memilih mitra terbaik.'),
   ]),
   _FaqGroup('Untuk Mitra (Penyedia Jasa)', [
     _Faq('Bagaimana cara jadi mitra?', 'Buka halaman Daftar / Masuk, pilih peran Mitra, lalu isi tab Daftar Jadi Mitra - gratis. Lengkapi nama usaha, kategori jasa, lokasi, WhatsApp, email & kata sandi. Setelah daftar, kamu langsung dapat 20 Kontak gratis dan bisa melihat kebutuhan pelanggan di sekitarmu.'),
     _Faq('Apa itu Kontak?', '1 Kontak = membuka 1 lead (data kontak satu pelanggan). Saat kamu membuka kebutuhan pelanggan untuk menghubunginya, 1 Kontak terpakai. Mitra baru dapat 20 Kontak gratis.'),
-    _Faq('Berapa harga paket Kontak?', 'Ada 3 paket: 10 Kontak / Rp25.000 | 30 Kontak / Rp60.000 (Terlaris, hemat Rp15.000) | 75 Kontak / Rp120.000 (paling hemat). Pembayaran lewat checkout, saldo Kontak otomatis bertambah setelah lunas.'),
+    _Faq('Bagaimana cara menambah Kontak?', 'Pilihan paket Kontak beserta harga dan ketentuannya tersedia di situs Sekita. Penambahan Kontak diatur lewat situs; setelah diproses, saldo Kontak pada akunmu akan diperbarui. Butuh bantuan? Hubungi admin lewat menu Hubungi Admin.'),
     _Faq('Apa arti badge verifikasi?', 'Badge menunjukkan tingkat kepercayaan mitra dalam 4 tingkat: Pemula (baru daftar) -> Tepercaya (profil lengkap + WA & email terverifikasi) -> Terverifikasi (foto diri & KTP) -> Pro (lengkap + surat izin usaha). Badge membantu pelanggan menilai, tapi bukan jaminan mutlak - selalu cek profil & ulasan sebelum bertransaksi.'),
   ]),
   _FaqGroup('Akun & Privasi', [
@@ -1114,15 +1114,15 @@ const List<_SkSection> _skData = [
     'Mitra dilarang menyalahgunakan data kontak pembeli untuk tujuan di luar penawaran jasa (mis. spam atau jual data).',
     'Kualitas, harga, dan penyelesaian pekerjaan sepenuhnya menjadi tanggung jawab mitra.',
   ]),
-  _SkSection('Kontak, Paket & Pembayaran', [
-    '1 Kontak = membuka 1 lead. Mitra membeli paket Kontak untuk membuka data kontak pembeli.',
-    'Harga paket tertera saat pembelian dan dapat berubah sewaktu-waktu; perubahan tidak berlaku surut atas paket yang sudah dibeli.',
-    'Pembayaran diproses melalui payment gateway pihak ketiga. Sekita tidak menyimpan data kartu/rekeningmu.',
+  _SkSection('Kontak & Paket', [
+    '1 Kontak = membuka 1 lead. Mitra menggunakan paket Kontak untuk membuka data kontak pembeli.',
+    'Pilihan dan harga paket tertera di situs Sekita dan dapat berubah sewaktu-waktu; perubahan tidak berlaku surut atas paket yang sudah diperoleh.',
+    'Pengaturan paket dan pembayaran dilakukan di luar aplikasi, yaitu melalui situs Sekita. Sekita tidak menyimpan data kartu/rekeningmu.',
     'Kontak yang sudah digunakan tidak dapat dikembalikan, kecuali ada kesalahan sistem yang kami verifikasi.',
     'Kontak/paket dapat memiliki masa berlaku; sisa kuota yang kedaluwarsa dapat hangus sesuai ketentuan paket.',
   ]),
   _SkSection('Sponsor & Promosi', [
-    'Mitra dapat membeli paket sponsor untuk menonjolkan profil atau penempatan tertentu.',
+    'Mitra dapat mengatur paket sponsor lewat situs Sekita untuk menonjolkan profil atau penempatan tertentu.',
     'Sponsor memengaruhi visibilitas/penempatan, bukan jaminan jumlah pesanan, klik, atau pendapatan.',
     'Sekita berhak menolak atau menghentikan promosi yang melanggar ketentuan atau hukum.',
   ]),
@@ -1149,7 +1149,7 @@ const List<_SkSection> _skData = [
   _SkSection('Penangguhan & Penghentian Akun', [
     'Sekita berhak menangguhkan atau menghentikan akun yang melanggar ketentuan, merugikan pengguna lain, atau menyalahgunakan layanan.',
     'Untuk pelanggaran berat, penghentian dapat dilakukan tanpa pemberitahuan terlebih dahulu.',
-    'Kamu dapat berhenti memakai Sekita kapan saja. Kuota/paket yang sudah dibeli mengikuti ketentuan pada bagian Kontak, Paket & Pembayaran.',
+    'Kamu dapat berhenti memakai Sekita kapan saja. Kuota/paket yang sudah diperoleh mengikuti ketentuan pada bagian Kontak & Paket.',
   ]),
   _SkSection('Batasan Tanggung Jawab', [
     'Segala transaksi, kesepakatan, pembayaran, dan hasil pekerjaan adalah tanggung jawab penuh pembeli & penyedia.',
