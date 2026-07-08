@@ -444,10 +444,12 @@ class _LeadScreenState extends State<LeadScreen> {
         icon: const Text('\u{1F4ED}', style: TextStyle(fontSize: 46)),
         title: 'Kontak Tersedia habis',
         body: 'Isi ulang dulu biar bisa buka WhatsApp pelanggan.',
-        go: 'Lihat Paket Kontak',
+        go: 'Hubungi Admin',
         sec: 'Nanti dulu',
       );
-      if (go) _isiUlang();
+      if (go) {
+        await openWa(_adminWa, text: 'Halo admin Sekita, saya mau isi ulang saldo Kontak untuk akun mitra saya.');
+      }
       return;
     }
 
