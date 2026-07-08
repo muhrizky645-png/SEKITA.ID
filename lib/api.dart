@@ -743,6 +743,22 @@ class Api {
     }
   }
 
+  /// Hapus permanen akun mitra beserta datanya (toko, verifikasi, sisa Kontak).
+  static Future<({bool ok, String error})> hapusAkunMitra() async {
+    try {
+      final r = await Net.postJson('$base/mitra-hapus.php', {'confirm': true});
+      final j = jsonDecode(r.body);
+      if (j is Map && j['ok'] == true) {
+        await Net.clear();
+        _setGuest();
+        return (ok: true, error: '');
+      }
+      return (ok: false, error: (j is Map && j['error'] != null) ? '${j['error']}' : 'Gagal menghapus akun.');
+    } catch (_) {
+      return (ok: false, error: 'Tidak dapat terhubung ke server.');
+    }
+  }
+
   // ---------- VERIFIKASI PEMBELI ----------
 
   static Future<Map<String, dynamic>> verifStatus() async {

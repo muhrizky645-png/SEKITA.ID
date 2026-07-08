@@ -13,6 +13,7 @@ const String _adminWa = '089607620368';
 const Color _muted = Color(0xFF64748B);
 const Color _line = Color(0xFFE8ECF3);
 const Color _green = Color(0xFF16A34A);
+const Color _danger = Color(0xFFDC2626);
 const int _kMaxMitra = 7;
 
 /// Normalisasi kategori \"Lainnya (xxx)\" -> \"lainnya\" untuk pencocokan.
@@ -331,7 +332,8 @@ class _MitraRow extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback? onTap;
-  const _MitraRow(this.icon, this.color, this.title, this.subtitle, this.onTap);
+  final bool danger;
+  const _MitraRow(this.icon, this.color, this.title, this.subtitle, this.onTap, {this.danger = false});
 
   @override
   Widget build(BuildContext context) {
@@ -357,7 +359,7 @@ class _MitraRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: kInk)),
+                  Text(title, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: danger ? _danger : kInk)),
                   const SizedBox(height: 2),
                   Text(subtitle, style: const TextStyle(color: _muted, fontSize: 12.5)),
                 ],
@@ -928,6 +930,56 @@ class _AkunMitraScreenState extends State<AkunMitraScreen> {
     if (ok == true) await Api.logout();
   }
 
+  Future<void> _hapusAkun() async {
+    final ctrl = TextEditingController();
+    final canDelete = ValueNotifier<bool>(false);
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus Akun Mitra'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Tindakan ini permanen. Akun mitra beserta data toko, status verifikasi, dan sisa Kontak akan dihapus dan tidak bisa dikembalikan.'),
+            const SizedBox(height: 14),
+            const Text('Ketik HAPUS untuk konfirmasi:', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              textCapitalization: TextCapitalization.characters,
+              decoration: InputDecoration(hintText: 'HAPUS', filled: true, fillColor: const Color(0xFFF7F8FA), border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: _line)), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: _line)), focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: kBrand, width: 1.5))),
+              onChanged: (v) => canDelete.value = v.trim().toUpperCase() == 'HAPUS',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
+          ValueListenableBuilder<bool>(
+            valueListenable: canDelete,
+            builder: (_, can, __) => FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: _danger),
+              onPressed: can ? () => Navigator.pop(ctx, true) : null,
+              child: const Text('Hapus Permanen'),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (yes != true || !mounted) return;
+    final nav = Navigator.of(context, rootNavigator: true);
+    final messenger = ScaffoldMessenger.of(context);
+    showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
+    final res = await Api.hapusAkunMitra();
+    nav.pop();
+    if (res.ok) {
+      messenger.showSnackBar(const SnackBar(content: Text('Akun mitra kamu sudah dihapus.')));
+    } else {
+      messenger.showSnackBar(SnackBar(content: Text(res.error)));
+    }
+  }
+
   /// Buka halaman Kebijakan Privasi di web Sekita (sumber tunggal, anti basi).
   Future<void> _privasi() async {
     final uri = Uri.parse('https://' 'sekita.id/kebijakan-privasi.html');
@@ -1189,6 +1241,7 @@ class _AkunMitraScreenState extends State<AkunMitraScreen> {
                     _MitraRow(Icons.help_outline, kBrand, 'Hubungi Admin', 'Bantuan, isi ulang Kontak, atau verifikasi', () => openWa(_adminWa, text: 'Halo admin Sekita, saya mitra ${m.displayName}.')),
                     _MitraRow(Icons.privacy_tip_outlined, kBrand, 'Kebijakan Privasi', 'Cara kami mengelola datamu', _privasi),
                     _MitraRow(Icons.logout, _muted, 'Keluar', 'Keluar dari akun mitra', _logout),
+                    _MitraRow(Icons.delete_outline, _danger, 'Hapus Akun Saya', 'Hapus permanen akun & data mitra', _hapusAkun, danger: true),
                   ]),
                   const SizedBox(height: 16),
                   const Text('Sekita Mitra \u00b7 Terhubung dengan pelanggan di sekitarmu', textAlign: TextAlign.center, style: TextStyle(color: _muted, fontSize: 12)),
