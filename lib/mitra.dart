@@ -968,20 +968,6 @@ class _AkunMitraScreenState extends State<AkunMitraScreen> {
           Text('${m.kuota}', style: const TextStyle(color: Color(0xFF22C55E), fontWeight: FontWeight.w800, fontSize: 40, height: 1.1)),
           const SizedBox(height: 4),
           const Text('Semakin banyak kontak, semakin banyak peluang!', style: TextStyle(color: Colors.white70, fontSize: 13)),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: FilledButton(
-              onPressed: _busy ? null : _lihatPaket,
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF0F172A),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('Lihat Paket Kontak', style: TextStyle(fontWeight: FontWeight.w800)),
-            ),
-          ),
         ],
       ),
     );
@@ -1068,10 +1054,6 @@ class _AkunMitraScreenState extends State<AkunMitraScreen> {
         ],
       ),
     );
-  }
-
-  Future<void> _lihatPaket() async {
-    await openWa(_adminWa, text: 'Halo admin Sekita, saya mau lihat paket dan isi ulang saldo Kontak untuk akun mitra ${Api.currentMitra?.displayName ?? ''}.');
   }
 
   /// Kartu ringkas status verifikasi (tier) + tombol ke halaman tingkatkan.

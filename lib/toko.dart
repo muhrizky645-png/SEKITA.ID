@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'api.dart';
 import 'core.dart';
 import 'models.dart';
@@ -53,18 +52,6 @@ class _TokoScreenState extends State<TokoScreen> {
     if (changed == true) _load();
   }
 
-  /// Buka halaman paket promosi/sponsor di web Sekita. Promosi dilakukan di web;
-  /// halaman web sudah menggate sendiri (minta login mitra / verifikasi bila perlu).
-  Future<void> _promosikan() async {
-    final uri = Uri.parse('https://' 'sekita.id/paket-sponsor.html');
-    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!ok && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tidak bisa membuka halaman promosi. Coba lagi.')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final m = Api.currentMitra;
@@ -106,23 +93,6 @@ class _TokoScreenState extends State<TokoScreen> {
                             icon: const Icon(Icons.edit_outlined, size: 18),
                             label: const Text('Edit Toko'),
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: FilledButton.icon(
-                            onPressed: _promosikan,
-                            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFF59E0B)),
-                            icon: const Icon(Icons.campaign_rounded, size: 20),
-                            label: const Text('Promosikan Toko mu', style: TextStyle(fontWeight: FontWeight.w800)),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'Tampil paling atas di pencarian & beranda. Atur paket promosi di web Sekita.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: _muted, fontSize: 12, height: 1.4),
                         ),
                       ],
                     ),
