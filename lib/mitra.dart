@@ -104,6 +104,8 @@ Widget _waBigIcon() => Image.asset(
       'assets/img/wa.png',
       width: 54,
       height: 54,
+      color: _green,
+      colorBlendMode: BlendMode.srcIn,
       errorBuilder: (_, __, ___) => const Icon(Icons.chat, size: 54, color: _green),
     );
 
@@ -400,10 +402,10 @@ class _LeadScreenState extends State<LeadScreen> {
 
   Future<void> _refresh() async {
     await Api.me();
-    if (mounted) setState(() => _future = _load());
+    if (mounted) setState(() { _future = _load(); });
   }
 
-  void _reload() => setState(() => _future = _load());
+  void _reload() => setState(() { _future = _load(); });
 
   void _snack(String m) {
     if (!mounted) return;
@@ -489,10 +491,13 @@ class _LeadScreenState extends State<LeadScreen> {
 
     Api.setMitraKuota(r.kuota);
     if (mounted) setState(() {});
-    final loc = k.loc.isNotEmpty ? ' di ${k.loc}' : '';
     await openWa(
       k.wa,
-      text: 'Halo, saya mitra Sekita. Saya tertarik membantu kebutuhan \"${k.title}\"$loc. Apakah masih dibutuhkan?',
+      text: pesanMitraKePembeli(
+        usaha: Api.currentMitra?.displayName ?? '',
+        kebutuhan: k.cat.isNotEmpty ? k.cat : k.title,
+        mitraId: Api.currentMitra?.id.toString() ?? '',
+      ),
     );
     if (r.deducted) {
       _snack('WhatsApp kebuka. 1 Kontak Tersedia kepakai. Sisa: ${r.kuota} Kontak.');
@@ -697,7 +702,7 @@ class _LeadCard extends StatelessWidget {
                     FilledButton.icon(
                       onPressed: onHubungi,
                       style: FilledButton.styleFrom(backgroundColor: _green),
-                      icon: Image.asset('assets/img/wa.png', width: 18, height: 18, errorBuilder: (_, __, ___) => const Icon(Icons.chat_outlined, size: 18)),
+                      icon: Image.asset('assets/img/wa.png', width: 18, height: 18, color: Colors.white, colorBlendMode: BlendMode.srcIn, errorBuilder: (_, __, ___) => const Icon(Icons.chat_outlined, size: 18, color: Colors.white)),
                       label: const Text('WhatsApp'),
                     ),
                 ],
@@ -846,7 +851,7 @@ class _LeadDetailSheet extends StatelessWidget {
                         onHubungi();
                       },
                       style: FilledButton.styleFrom(backgroundColor: _green),
-                      icon: Image.asset('assets/img/wa.png', width: 20, height: 20, errorBuilder: (_, __, ___) => const Icon(Icons.chat_outlined, size: 20)),
+                      icon: Image.asset('assets/img/wa.png', width: 20, height: 20, color: Colors.white, colorBlendMode: BlendMode.srcIn, errorBuilder: (_, __, ___) => const Icon(Icons.chat_outlined, size: 20, color: Colors.white)),
                       label: const Text('Hubungi via WhatsApp', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                     ),
                   ),

@@ -8,6 +8,85 @@ const Color _muted = Color(0xFF64748B);
 const Color _line = Color(0xFFE8ECF3);
 const Color _green = Color(0xFF16A34A);
 
+/// true jika lead [k] sudah dihubungi mitra ini dalam 24 jam terakhir.
+/// Kontak ulang dalam jendela ini gratis (samakan dengan web).
+bool _recontactFree(Kebutuhan k) {
+  final m = Api.currentMitra;
+  if (m == null) return false;
+  final mid = m.id.toString();
+  final mwa = waNormalize(m.wa);
+  const windowMs = 24 * 60 * 60 * 1000;
+  var last = 0;
+  for (final c in k.contactedBy) {
+    final match = (c.id.isNotEmpty && c.id == mid) ||
+        (mwa.isNotEmpty && c.wa.isNotEmpty && waNormalize(c.wa) == mwa);
+    if (match && c.ts > last) last = c.ts;
+  }
+  if (last == 0) return false;
+  return DateTime.now().millisecondsSinceEpoch - last < windowMs;
+}
+
+/// Ikon WhatsApp besar untuk header popup (aset, fallback ikon hijau).
+Widget _waBigIcon() => Image.asset(
+      'assets/img/wa.png',
+      width: 54,
+      height: 54,
+      color: _green,
+      colorBlendMode: BlendMode.srcIn,
+      errorBuilder: (_, __, ___) => const Icon(Icons.chat, size: 54, color: _green),
+    );
+
+/// Popup konfirmasi bergaya web: kartu putih, ikon besar, tombol hijau.
+Future<bool> _waModal(
+  BuildContext context, {
+  required String title,
+  required String body,
+  required String go,
+  String sec = '',
+}) async {
+  final r = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 26, 24, 18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _waBigIcon(),
+            const SizedBox(height: 10),
+            Text(title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20, color: kInk)),
+            const SizedBox(height: 6),
+            Text(body, textAlign: TextAlign.center, style: const TextStyle(color: _muted, fontSize: 14.5, height: 1.55)),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _green,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
+                ),
+                child: Text(go, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+              ),
+            ),
+            if (sec.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(sec, style: const TextStyle(color: _muted, fontSize: 13.5)),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ),
+  );
+  return r == true;
+}
+
 /// Riwayat Kontak: daftar lead (kebutuhan) yang sudah pernah dihubungi mitra ini.
 /// Diturunkan dari daftar kebutuhan (field contactedBy) -> tanpa endpoint backend baru.
 class RiwayatKontakScreen extends StatefulWidget {
@@ -34,7 +113,9 @@ class _RiwayatKontakScreenState extends State<RiwayatKontakScreen> {
     return mine;
   }
 
-  void _reload() => setState(() => _future = _load());
+  void _reload() => setState(() {
+    _future = _load();
+  });
 
   Future<void> _refresh() async {
     _reload();
@@ -51,6 +132,19 @@ class _RiwayatKontakScreenState extends State<RiwayatKontakScreen> {
   }
 
   Future<void> _hubungiLagi(Kebutuhan k) async {
+    if (k.wa.isEmpty) return;
+    final free = _recontactFree(k);
+    final ok = await _waModal(
+      context,
+      title: free ? 'Sudah pernah kamu hubungi' : 'Lanjut chat WhatsApp?',
+      body: free
+          ? 'Nomor ini sudah pernah kamu hubungi dalam 24 jam terakhir. Mau hubungi lagi? Tidak akan mengurangi Kontak Tersedia kamu.'
+          : 'Kalau lanjut, 1 Kontak Tersedia kepakai ya.',
+      go: free ? 'Hubungi lagi' : 'Lanjut buka WhatsApp',
+      sec: 'Batal',
+    );
+    if (!ok || !mounted) return;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -64,15 +158,18 @@ class _RiwayatKontakScreenState extends State<RiwayatKontakScreen> {
     }
     Api.setMitraKuota(r.kuota);
     if (mounted) setState(() {});
-    final loc = k.loc.isNotEmpty ? ' di ${k.loc}' : '';
     await openWa(
       k.wa,
-      text: 'Halo, saya mitra Sekita. Saya tertarik membantu kebutuhan \"${k.title}\"$loc. Apakah masih dibutuhkan?',
+      text: pesanMitraKePembeli(
+        usaha: Api.currentMitra?.displayName ?? '',
+        kebutuhan: k.cat.isNotEmpty ? k.cat : k.title,
+        mitraId: Api.currentMitra?.id.toString() ?? '',
+      ),
     );
     if (r.deducted) {
-      _snack('1 Kontak terpakai. Sisa saldo: ${r.kuota} Kontak.');
+      _snack('WhatsApp kebuka. 1 Kontak Tersedia kepakai. Sisa: ${r.kuota} Kontak.');
     } else {
-      _snack('Gratis - lanjutan kontak dalam 24 jam.');
+      _snack('WhatsApp kebuka. Tidak ada Kontak terpakai (sudah dihubungi <24 jam).');
     }
   }
 
@@ -271,16 +368,18 @@ class _RiwayatCard extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text('${k.contactedCount}/7 penawar', style: const TextStyle(color: _muted, fontSize: 12.5)),
                     const Spacer(),
-                    OutlinedButton.icon(
+                    FilledButton.icon(
                       onPressed: onHubungi,
-                      style: OutlinedButton.styleFrom(foregroundColor: _green, side: const BorderSide(color: _green)),
+                      style: FilledButton.styleFrom(backgroundColor: _green),
                       icon: Image.asset(
                         'assets/img/wa.png',
                         width: 18,
                         height: 18,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.chat_outlined, size: 18, color: _green),
+                        color: Colors.white,
+                        colorBlendMode: BlendMode.srcIn,
+                        errorBuilder: (_, __, ___) => const Icon(Icons.chat_outlined, size: 18, color: Colors.white),
                       ),
-                      label: const Text('WhatsApp lagi'),
+                      label: const Text('WhatsApp lagi', style: TextStyle(fontWeight: FontWeight.w700)),
                     ),
                   ],
                 ),

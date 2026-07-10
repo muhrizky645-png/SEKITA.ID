@@ -1,7 +1,7 @@
 name: sekita
 description: "Aplikasi Sekita — temukan jasa profesional di sekitarmu."
 publish_to: "none"
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -39,3 +39,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/icon/sekita_icon.png
+    - assets/img/wa.png

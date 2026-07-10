@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'core.dart';
+import 'api.dart';
 import 'mitra_api.dart';
 import 'notif_bell.dart';
 
@@ -17,6 +18,123 @@ String _timeAgo(int ms) {
   final mo = (d.inDays / 30).floor();
   if (mo < 12) return '$mo bln lalu';
   return '${(d.inDays / 365).floor()} thn lalu';
+}
+
+/// Konfirmasi + (kalau perlu) potong 1 Kontak, lalu buka WhatsApp.
+/// Aturan jendela 24 jam disamakan dengan Lead di web (kebutuhan-kontak.php):
+///  - Sudah dihubungi < 24 jam  -> gratis, tidak memotong Kontak.
+///  - Sudah dihubungi >= 24 jam -> potong 1 Kontak lagi.
+Future<void> _hubungiUlang(BuildContext context, KontakRiwayat k) async {
+  if (k.wa.isEmpty) return;
+  const windowMs = 24 * 60 * 60 * 1000;
+  final free = k.ts > 0 && (DateTime.now().millisecondsSinceEpoch - k.ts) < windowMs;
+
+  final ok = await _waModal(
+    context,
+    title: free ? 'Sudah pernah kamu hubungi' : 'Lanjut chat WhatsApp?',
+    body: free
+        ? 'Nomor ini sudah pernah kamu hubungi dalam 24 jam terakhir. Mau hubungi lagi? Tidak akan mengurangi Kontak Tersedia kamu.'
+        : 'Kalau lanjut, 1 Kontak Tersedia kepakai ya.',
+    go: free ? 'Hubungi lagi' : 'Lanjut buka WhatsApp',
+    sec: 'Batal',
+  );
+  if (!ok || !context.mounted) return;
+
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const Center(child: CircularProgressIndicator()),
+  );
+  final r = await Api.kontakLead(k.id);
+  if (context.mounted) Navigator.pop(context);
+  if (!context.mounted) return;
+
+  final messenger = ScaffoldMessenger.of(context);
+  if (!r.ok) {
+    final pesan = r.reason == 'no_quota'
+        ? 'Kontak Tersedia habis. Hubungi admin untuk isi ulang.'
+        : r.reason == 'full'
+            ? 'Lead ini sudah penuh penawar.'
+            : (r.error.isNotEmpty ? r.error : 'Gagal menghubungi.');
+    messenger.showSnackBar(SnackBar(content: Text(pesan)));
+    return;
+  }
+
+  Api.setMitraKuota(r.kuota);
+  await openWa(
+    k.wa,
+    text: pesanMitraKePembeli(
+      usaha: Api.currentMitra?.displayName ?? '',
+      kebutuhan: k.cat.isNotEmpty ? k.cat : k.title,
+      mitraId: Api.currentMitra?.id.toString() ?? '',
+    ),
+  );
+  messenger.showSnackBar(SnackBar(
+    content: Text(r.deducted
+        ? 'WhatsApp kebuka. 1 Kontak Tersedia kepakai. Sisa: ${r.kuota} Kontak.'
+        : 'WhatsApp kebuka. Tidak ada Kontak terpakai (sudah dihubungi <24 jam).'),
+  ));
+}
+
+/// Ikon WhatsApp besar untuk header popup (aset, fallback ikon hijau).
+Widget _waBigIcon() => Image.asset(
+      'assets/img/wa.png',
+      width: 54,
+      height: 54,
+      color: _green,
+      colorBlendMode: BlendMode.srcIn,
+      errorBuilder: (_, __, ___) => const Icon(Icons.chat, size: 54, color: _green),
+    );
+
+/// Popup konfirmasi bergaya web: kartu putih, ikon besar, tombol hijau.
+Future<bool> _waModal(
+  BuildContext context, {
+  required String title,
+  required String body,
+  required String go,
+  String sec = '',
+}) async {
+  final r = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 26, 24, 18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _waBigIcon(),
+            const SizedBox(height: 10),
+            Text(title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20, color: kInk)),
+            const SizedBox(height: 6),
+            Text(body, textAlign: TextAlign.center, style: const TextStyle(color: _muted, fontSize: 14.5, height: 1.55)),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _green,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
+                ),
+                child: Text(go, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+              ),
+            ),
+            if (sec.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(sec, style: const TextStyle(color: _muted, fontSize: 13.5)),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ),
+  );
+  return r == true;
 }
 
 /// Daftar lead yang sudah pernah dihubungi mitra (Riwayat Kontak).
@@ -37,12 +155,12 @@ class _RiwayatKontakScreenState extends State<RiwayatKontakScreen> {
 
   Future<void> _refresh() async {
     final f = MitraApi.riwayatKontak();
-    setState(() => _future = f);
+    setState(() { _future = f; });
     await f;
   }
 
-  void _openDetail(KontakRiwayat k) {
-    showModalBottomSheet(
+  Future<void> _openDetail(KontakRiwayat k) async {
+    final go = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
@@ -51,6 +169,7 @@ class _RiwayatKontakScreenState extends State<RiwayatKontakScreen> {
       ),
       builder: (_) => _RiwayatDetailSheet(k: k),
     );
+    if (go == true && mounted) _hubungiUlang(context, k);
   }
 
   @override
@@ -177,18 +296,19 @@ class _RiwayatCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: k.wa.isEmpty ? null : () => openWa(k.wa, text: 'Halo, saya mitra Sekita soal ${k.title}.'),
+                  child: FilledButton.icon(
+                    onPressed: k.wa.isEmpty ? null : () => _hubungiUlang(context, k),
                     icon: Image.asset(
                       'assets/img/wa.png',
                       width: 18,
                       height: 18,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.chat_rounded, size: 18, color: _green),
+                      color: Colors.white,
+                      colorBlendMode: BlendMode.srcIn,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.chat_rounded, size: 18, color: Colors.white),
                     ),
                     label: const Text('WhatsApp lagi'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: _green,
-                      side: const BorderSide(color: _green),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _green,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
@@ -280,18 +400,15 @@ class _RiwayatDetailSheet extends StatelessWidget {
                   width: double.infinity,
                   height: 50,
                   child: FilledButton.icon(
-                    onPressed: k.wa.isEmpty
-                        ? null
-                        : () {
-                            Navigator.pop(context);
-                            openWa(k.wa, text: 'Halo, saya mitra Sekita soal ${k.title}.');
-                          },
+                    onPressed: k.wa.isEmpty ? null : () => Navigator.pop(context, true),
                     style: FilledButton.styleFrom(backgroundColor: _green),
                     icon: Image.asset(
                       'assets/img/wa.png',
                       width: 20,
                       height: 20,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.chat_rounded, size: 20),
+                      color: Colors.white,
+                      colorBlendMode: BlendMode.srcIn,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.chat_rounded, size: 20, color: Colors.white),
                     ),
                     label: const Text('WhatsApp lagi', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                   ),

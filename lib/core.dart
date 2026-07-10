@@ -224,6 +224,37 @@ Future<void> openWa(String wa, {String text = ''}) async {
   await launchUrl(uri, mode: LaunchMode.externalApplication);
 }
 
+/// Pesan WhatsApp mitra -> pembeli. Kata-katanya disamakan dengan sekita.id
+/// (fungsi sellerToBuyerMsg di web).
+String pesanMitraKePembeli({
+  required String usaha,
+  required String kebutuhan,
+  String mitraId = '',
+}) {
+  final who = usaha.trim().isNotEmpty ? usaha.trim() : 'Mitra';
+  final kb = kebutuhan.trim().isNotEmpty ? kebutuhan.trim() : 'kebutuhan Anda';
+  final profil = mitraId.trim().isNotEmpty
+      ? '\n\nSebelum lanjut, Anda bisa cek dulu profil & portofolio saya di sini:\nsekita.id/jasa/${mitraId.trim()}'
+      : '';
+  return 'Halo, saya *$who*, mitra dari *sekita.id*. \u{1F64C}\n'
+      'Saya melihat postingan kebutuhan Anda soal "$kb" dan ingin menawarkan jasa saya.'
+      '$profil\n\n'
+      'Kalau berkenan, boleh kita diskusikan detailnya? Terima kasih \u{1F64F}';
+}
+
+/// Pesan WhatsApp pembeli -> penjual/mitra. Kata-katanya disamakan dengan
+/// sekita.id (fungsi buyerToSellerMsg di web).
+String pesanPembeliKeMitra({
+  required String usaha,
+  required String kebutuhan,
+}) {
+  final who = usaha.trim().isNotEmpty ? usaha.trim() : 'Mitra';
+  final kb = kebutuhan.trim().isNotEmpty ? kebutuhan.trim() : 'sebuah kebutuhan';
+  return 'Halo *$who*, saya menemukan profil Anda di *sekita.id*. \u{1F44B}\n'
+      'Saya tertarik dengan jasa Anda, kebetulan saya ada kebutuhan soal "$kb".\n\n'
+      'Boleh kita diskusikan lebih lanjut? Terima kasih \u{1F64F}';
+}
+
 IconData iconForKategori(String c) {
   switch (c.toLowerCase()) {
     case 'terapis':
