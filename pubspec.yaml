@@ -1,7 +1,7 @@
 name: sekita
 description: "Aplikasi Sekita — temukan jasa profesional di sekitarmu."
 publish_to: "none"
-version: 1.0.2+5
+version: 1.0.3+6
 
 environment:
   sdk: ">=3.3.0 <4.0.0"

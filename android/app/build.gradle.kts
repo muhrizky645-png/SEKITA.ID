@@ -31,7 +31,9 @@ android {
         applicationId = "id.sekita.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = 5
+        // versionCode otomatis dari build number Codemagic (naik tiap build).
+        // Fallback ke 6 untuk build lokal (harus > versionCode terakhir di Play).
+        versionCode = (System.getenv("BUILD_NUMBER")?.toIntOrNull() ?: 6)
         versionName = flutter.versionName
     }
 
