@@ -16,6 +16,7 @@ class _MitraDetailScreenState extends State<MitraDetailScreen> {
   late Future<List<String>> _porto;
   late Future<List<Ulasan>> _ulasan;
   late Future<String> _cover;
+  late Future<List<MitraItem>> _items;
 
   @override
   void initState() {
@@ -23,6 +24,7 @@ class _MitraDetailScreenState extends State<MitraDetailScreen> {
     _porto = Api.fetchPortfolio(widget.mitra.id);
     _ulasan = Api.fetchUlasan(widget.mitra.id);
     _cover = Api.fetchCover(widget.mitra.id);
+    _items = Api.fetchMitraItems(widget.mitra.id);
     Api.catatLihat(widget.mitra.id); // hitung 1 kali dilihat
   }
 
@@ -65,6 +67,7 @@ class _MitraDetailScreenState extends State<MitraDetailScreen> {
           ],
           _title('Portofolio'),
           _portoView(),
+          _katalogView(),
           _title('Ulasan'),
           _ulasanView(),
         ],
@@ -328,6 +331,94 @@ class _MitraDetailScreenState extends State<MitraDetailScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _katalogView() {
+    return FutureBuilder<List<MitraItem>>(
+      future: _items,
+      builder: (context, snap) {
+        final list = (snap.data ?? <MitraItem>[]).where((e) => e.isAktif).toList();
+        if (list.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _title('Katalog / Daftar Harga'),
+            ...list.map(_katalogCard),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _katalogCard(MitraItem it) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE8ECF3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (it.foto.isNotEmpty) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: SizedBox(width: 66, height: 66, child: SekitaImage(it.foto, fit: BoxFit.cover)),
+            ),
+            const SizedBox(width: 12),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF4FF),
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: Text(it.jenisLabel,
+                      style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: kBrand)),
+                ),
+                const SizedBox(height: 5),
+                Text(it.judul, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5)),
+                const SizedBox(height: 2),
+                Text(it.hargaLabel + (it.satuan.isNotEmpty ? ' / ' + it.satuan : ''),
+                    style: const TextStyle(color: kBrand, fontWeight: FontWeight.w800, fontSize: 14)),
+                if (it.deskripsi.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(it.deskripsi,
+                      style: const TextStyle(color: Color(0xFF64748B), fontSize: 12.5, height: 1.4)),
+                ],
+                if (it.jenis == 'barang' && it.stok != null) ...[
+                  const SizedBox(height: 4),
+                  Text('Stok: ${it.stok}',
+                      style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            height: 34,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF25D366),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: widget.mitra.wa.isEmpty
+                  ? null
+                  : () => openWa(widget.mitra.wa,
+                      text: 'Halo ' + widget.mitra.displayName + ', saya tertarik dengan "' + it.judul + '" (' + it.hargaLabel + '). Apakah tersedia?'),
+              child: const Text('Pilih', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

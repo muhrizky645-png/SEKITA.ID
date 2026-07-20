@@ -303,6 +303,21 @@ class Api {
     return '';
   }
 
+  static Future<List<MitraItem>> fetchMitraItems(String mitraId) async {
+    if (mitraId.isEmpty || mitraId == '0') return [];
+    try {
+      final r = await http.get(Uri.parse('$base/mitra-item-list.php?mitra_id=$mitraId'));
+      final j = jsonDecode(r.body);
+      if (j is Map && j['items'] is List) {
+        return (j['items'] as List)
+            .whereType<Map>()
+            .map((e) => MitraItem.fromJson(e.cast<String, dynamic>()))
+            .toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
   static Future<List<Ulasan>> fetchUlasan(String mitraId) async {
     try {
       final r = await http.get(Uri.parse('$base/ulasan-list.php'));

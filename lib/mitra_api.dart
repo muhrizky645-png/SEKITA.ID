@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'api.dart';
+import 'models.dart';
 
 /// Satu lead yang sudah pernah dihubungi mitra (untuk Riwayat Kontak).
 class KontakRiwayat {
@@ -92,6 +93,73 @@ class MitraApi {
         return (ok: true, error: '');
       }
       return (ok: false, error: (j is Map && j['error'] != null) ? '${j['error']}' : 'Gagal menyimpan profil.');
+    } catch (_) {
+      return (ok: false, error: 'Tidak dapat terhubung ke server.');
+    }
+  }
+
+  // -- Katalog / Daftar Harga (item mitra) --
+  static Future<List<MitraItem>> ambilItemSaya() async {
+    try {
+      final r = await Net.get('${Api.base}/mitra-item-list.php?mine=1');
+      final j = jsonDecode(r.body);
+      if (j is Map && j['items'] is List) {
+        return (j['items'] as List)
+            .whereType<Map>()
+            .map((e) => MitraItem.fromJson(e.cast<String, dynamic>()))
+            .toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  static Future<({bool ok, String error, int id})> simpanItem({
+    int? id,
+    required String jenis,
+    required String judul,
+    required int harga,
+    required String hargaTipe,
+    String satuan = '',
+    int? stok,
+    String foto = '',
+    String deskripsi = '',
+    bool aktif = true,
+  }) async {
+    if (_mid <= 0) return (ok: false, error: 'Belum login sebagai mitra.', id: 0);
+    try {
+      final body = <String, dynamic>{
+        'jenis': jenis,
+        'judul': judul,
+        'harga': harga,
+        'harga_tipe': hargaTipe,
+        'satuan': satuan,
+        'deskripsi': deskripsi,
+        'aktif': aktif ? 1 : 0,
+      };
+      if (id != null && id > 0) body['id'] = id;
+      if (jenis == 'barang' && stok != null) body['stok'] = stok;
+      if (foto.isNotEmpty) body['foto'] = foto;
+      final r = await Net.postJson('${Api.base}/mitra-item-save.php', body);
+      final j = jsonDecode(r.body);
+      if (j is Map && j['ok'] == true) {
+        final rid = (j['id'] is num) ? (j['id'] as num).toInt() : (id ?? 0);
+        return (ok: true, error: '', id: rid);
+      }
+      final err = (j is Map && j['error'] != null) ? '${j['error']}' : 'Gagal menyimpan item.';
+      return (ok: false, error: err, id: 0);
+    } catch (_) {
+      return (ok: false, error: 'Tidak dapat terhubung ke server.', id: 0);
+    }
+  }
+
+  static Future<({bool ok, String error})> hapusItem(int id) async {
+    if (_mid <= 0) return (ok: false, error: 'Belum login sebagai mitra.');
+    try {
+      final r = await Net.postJson('${Api.base}/mitra-item-hapus.php', {'id': id});
+      final j = jsonDecode(r.body);
+      if (j is Map && j['ok'] == true) return (ok: true, error: '');
+      final err = (j is Map && j['error'] != null) ? '${j['error']}' : 'Gagal menghapus item.';
+      return (ok: false, error: err);
     } catch (_) {
       return (ok: false, error: 'Tidak dapat terhubung ke server.');
     }

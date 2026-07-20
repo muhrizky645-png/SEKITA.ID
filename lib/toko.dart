@@ -5,6 +5,7 @@ import 'api.dart';
 import 'core.dart';
 import 'models.dart';
 import 'mitra_api.dart';
+import 'katalog.dart';
 import 'notif_bell.dart';
 
 const Color _muted = Color(0xFF64748B);
@@ -80,6 +81,8 @@ class _TokoScreenState extends State<TokoScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _aboutSection(m),
+                        const SizedBox(height: 16),
+                        _katalogNav(),
                         const SizedBox(height: 16),
                         _portoSection(),
                         const SizedBox(height: 16),
@@ -178,6 +181,31 @@ class _TokoScreenState extends State<TokoScreen> {
           Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
           const SizedBox(height: 10),
           child,
+        ],
+      ),
+    );
+  }
+
+  Widget _katalogNav() {
+    return _card(
+      title: 'Katalog / Daftar Harga',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Tampilkan layanan atau produk beserta harga di profilmu.',
+              style: TextStyle(color: _muted, fontSize: 13)),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: FilledButton.tonalIcon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const KatalogPage()),
+              ),
+              icon: const Icon(Icons.sell_outlined, size: 18),
+              label: const Text('Kelola Katalog'),
+            ),
+          ),
         ],
       ),
     );

@@ -208,3 +208,78 @@ class Pembeli {
     );
   }
 }
+
+
+class MitraItem {
+  final int id;
+  final int mitraId;
+  final String jenis;      // jasa | barang | paket
+  final String judul;
+  final int harga;
+  final String hargaTipe;  // pasti | mulai_dari | nego
+  final String satuan;
+  final int? stok;
+  final String foto;
+  final String deskripsi;
+  final int aktif;
+
+  MitraItem({
+    required this.id,
+    required this.mitraId,
+    required this.jenis,
+    required this.judul,
+    required this.harga,
+    required this.hargaTipe,
+    required this.satuan,
+    required this.stok,
+    required this.foto,
+    required this.deskripsi,
+    required this.aktif,
+  });
+
+  bool get isAktif => aktif == 1;
+
+  String get jenisLabel {
+    switch (jenis) {
+      case 'barang':
+        return 'Barang';
+      case 'paket':
+        return 'Paket';
+      default:
+        return 'Jasa';
+    }
+  }
+
+  String get hargaLabel {
+    if (hargaTipe == 'nego') return 'Nego';
+    final rp = 'Rp' + _ribuan(harga);
+    return hargaTipe == 'mulai_dari' ? 'mulai ' + rp : rp;
+  }
+
+  static String _ribuan(int n) {
+    final s = n.abs().toString();
+    final b = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) b.write('.');
+      b.write(s[i]);
+    }
+    return (n < 0 ? '-' : '') + b.toString();
+  }
+
+  factory MitraItem.fromJson(Map<String, dynamic> j) {
+    int toI(dynamic v) => v == null ? 0 : (v is num ? v.toInt() : int.tryParse('$v') ?? 0);
+    return MitraItem(
+      id: toI(j['id']),
+      mitraId: toI(j['mitraId']),
+      jenis: '${j['jenis'] ?? 'jasa'}',
+      judul: '${j['judul'] ?? ''}',
+      harga: toI(j['harga']),
+      hargaTipe: '${j['hargaTipe'] ?? 'pasti'}',
+      satuan: '${j['satuan'] ?? ''}',
+      stok: j['stok'] == null ? null : toI(j['stok']),
+      foto: '${j['foto'] ?? ''}',
+      deskripsi: '${j['deskripsi'] ?? ''}',
+      aktif: j['aktif'] == null ? 1 : toI(j['aktif']),
+    );
+  }
+}
