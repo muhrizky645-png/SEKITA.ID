@@ -312,6 +312,8 @@ class _EditTokoPageState extends State<EditTokoPage> {
   bool _coverChanged = false;
   bool _portoChanged = false;
   bool _saving = false;
+  List<MitraItem> _items = [];
+  bool _itemsLoading = true;
 
   @override
   void initState() {
@@ -334,6 +336,7 @@ class _EditTokoPageState extends State<EditTokoPage> {
     }
     _cover = widget.cover;
     _porto = List<String>.from(widget.porto);
+    _loadItems();
   }
 
   @override
@@ -341,6 +344,126 @@ class _EditTokoPageState extends State<EditTokoPage> {
     _nama.dispose();
     _desk.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadItems() async {
+    final items = await MitraApi.ambilItemSaya();
+    if (!mounted) return;
+    setState(() {
+      _items = items;
+      _itemsLoading = false;
+    });
+  }
+
+  Future<void> _kelolaKatalog() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const KatalogPage()),
+    );
+    _loadItems();
+  }
+
+  Widget _katalogEditor() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text('Katalog / Daftar Harga',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+            const Spacer(),
+            if (!_itemsLoading)
+              Text('${_items.length} item',
+                  style: const TextStyle(color: _muted, fontSize: 13)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        if (_itemsLoading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Center(
+              child: SizedBox(
+                  width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)),
+            ),
+          )
+        else if (_items.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _line),
+            ),
+            child: const Text(
+              'Belum ada item katalog. Tambahkan layanan atau produk beserta harganya.',
+              style: TextStyle(color: _muted, fontSize: 13, height: 1.4),
+            ),
+          )
+        else
+          Column(children: _items.map(_katalogRow).toList()),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          height: 46,
+          child: FilledButton.tonalIcon(
+            onPressed: _kelolaKatalog,
+            icon: const Icon(Icons.sell_outlined, size: 18),
+            label: Text(_items.isEmpty ? 'Tambah / Kelola Katalog' : 'Kelola Katalog'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _katalogRow(MitraItem it) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _line),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (it.foto.isNotEmpty) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox(width: 46, height: 46, child: SekitaImage(it.foto, fit: BoxFit.cover)),
+            ),
+            const SizedBox(width: 10),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(it.judul,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                    ),
+                    if (!it.isAktif)
+                      const Padding(
+                        padding: EdgeInsets.only(left: 6),
+                        child: Text('Nonaktif', style: TextStyle(color: _muted, fontSize: 11)),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  it.jenisLabel + ' · ' + it.hargaLabel + (it.satuan.isNotEmpty ? ' / ' + it.satuan : ''),
+                  style: const TextStyle(color: kBrand, fontWeight: FontWeight.w700, fontSize: 12.5),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<String?> _pick({required int w, required int h, required int q}) async {
@@ -560,6 +683,8 @@ class _EditTokoPageState extends State<EditTokoPage> {
                 ),
                 const SizedBox(height: 10),
                 _portoEditor(),
+                const SizedBox(height: 22),
+                _katalogEditor(),
                 const SizedBox(height: 26),
                 SizedBox(
                   width: double.infinity,
