@@ -636,7 +636,8 @@ class _EditSheetState extends State<_EditSheet> {
   late final TextEditingController _budget;
   late final TextEditingController _wa;
   late final TextEditingController _deskripsi;
-  late String _kategori;
+  late String _indukKey;
+  late String _subChoice;
   bool _busy = false;
 
   @override
@@ -648,7 +649,18 @@ class _EditSheetState extends State<_EditSheet> {
     _budget = TextEditingController(text: k.budget);
     _wa = TextEditingController(text: k.wa);
     _deskripsi = TextEditingController(text: k.deskripsi);
-    _kategori = k.cat.isEmpty ? Api.kategoriDasar.first : k.cat;
+    final existing = k.cat.trim();
+    final canon = canonicalCat(existing);
+    final ik = indukKeyOf(existing);
+    _indukKey = ik.isNotEmpty ? ik : sekitaTaxonomy.first.key;
+    final ind0 = indukByKey(_indukKey) ?? sekitaTaxonomy.first;
+    if (existing.isEmpty) {
+      _subChoice = ind0.subs.isNotEmpty ? ind0.subs.first : 'Lainnya';
+    } else if (isSpecificSub(canon)) {
+      _subChoice = canon;
+    } else {
+      _subChoice = 'Lainnya';
+    }
   }
 
   @override
@@ -659,6 +671,12 @@ class _EditSheetState extends State<_EditSheet> {
     _wa.dispose();
     _deskripsi.dispose();
     super.dispose();
+  }
+
+  String get _kategoriValue {
+    final ind = indukByKey(_indukKey);
+    if (ind == null) return _subChoice;
+    return _subChoice == 'Lainnya' ? ind.name : _subChoice;
   }
 
   void _snack(String m) {
@@ -677,7 +695,7 @@ class _EditSheetState extends State<_EditSheet> {
     final r = await Api.editKebutuhan(
       id: widget.k.id,
       title: title,
-      kategori: _kategori,
+      kategori: _kategoriValue,
       lokasi: lokasi,
       deskripsi: _deskripsi.text.trim(),
       budget: _budget.text.trim(),
@@ -697,9 +715,6 @@ class _EditSheetState extends State<_EditSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final cats = Api.kategoriDasar.contains(_kategori)
-        ? Api.kategoriDasar
-        : <String>[_kategori, ...Api.kategoriDasar];
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(left: 20, right: 20, top: 12, bottom: MediaQuery.of(context).viewInsets.bottom + 16),
@@ -725,11 +740,32 @@ class _EditSheetState extends State<_EditSheet> {
                 const SizedBox(height: 12),
                 _label('Kategori'),
                 DropdownButtonFormField<String>(
-                  initialValue: _kategori,
+                  initialValue: _indukKey,
                   isExpanded: true,
                   decoration: _dec('Pilih kategori'),
-                  items: cats.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                  onChanged: _busy ? null : (v) => setState(() => _kategori = v ?? _kategori),
+                  items: sekitaTaxonomy
+                      .map((ind) => DropdownMenuItem<String>(value: ind.key, child: Text(ind.name)))
+                      .toList(),
+                  onChanged: _busy
+                      ? null
+                      : (v) => setState(() {
+                            _indukKey = v ?? _indukKey;
+                            final ind = indukByKey(_indukKey);
+                            _subChoice = (ind != null && ind.subs.isNotEmpty) ? ind.subs.first : 'Lainnya';
+                          }),
+                ),
+                const SizedBox(height: 12),
+                _label('Layanan'),
+                DropdownButtonFormField<String>(
+                  key: ValueKey('sub_' + _indukKey),
+                  initialValue: _subChoice,
+                  isExpanded: true,
+                  decoration: _dec('Pilih layanan'),
+                  items: <DropdownMenuItem<String>>[
+                    ...?indukByKey(_indukKey)?.subs.map((s) => DropdownMenuItem<String>(value: s, child: Text(s, overflow: TextOverflow.ellipsis))),
+                    const DropdownMenuItem<String>(value: 'Lainnya', child: Text('Lainnya (umum)')),
+                  ],
+                  onChanged: _busy ? null : (v) => setState(() => _subChoice = v ?? _subChoice),
                 ),
                 const SizedBox(height: 12),
                 _label('Lokasi'),

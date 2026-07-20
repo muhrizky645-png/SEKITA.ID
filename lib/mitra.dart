@@ -9,22 +9,20 @@ import 'verif_mitra.dart';
 import 'lupa_password.dart';
 import 'riwayat_kontak.dart';
 
-const String _adminWa = '089607620368';
+const String _adminWa = '083176265153';
 const Color _muted = Color(0xFF64748B);
 const Color _line = Color(0xFFE8ECF3);
 const Color _green = Color(0xFF16A34A);
 const Color _danger = Color(0xFFDC2626);
 const int _kMaxMitra = 7;
 
-/// Normalisasi kategori \"Lainnya (xxx)\" -> \"lainnya\" untuk pencocokan.
-String _catBase(String c) => c.split('(').first.trim().toLowerCase();
-
 /// true jika kebutuhan kategori [cat] di luar bidang mitra yang sedang login.
 /// Mitra tanpa kategori dianggap umum (boleh menghubungi semua lead).
+/// Pencocokan berbasis induk supaya sub kategori tetap dianggap sebidang.
 bool _outOfCategory(String cat) {
   final mine = Api.currentMitra?.kategori ?? '';
   if (mine.trim().isEmpty || cat.trim().isEmpty) return false;
-  return _catBase(cat) != _catBase(mine);
+  return !sameInduk(cat, mine);
 }
 
 /// true jika lead [k] sudah pernah dihubungi mitra ini dalam 24 jam terakhir.
@@ -1277,13 +1275,16 @@ class _JadiMitraScreenState extends State<JadiMitraScreen> {
   final _lokasi = TextEditingController();
   final _deskripsi = TextEditingController();
   final _pass = TextEditingController();
-  String _kategori = Api.kategoriDasar.first;
+  late String _indukKey;
+  late String _subChoice;
   bool _busy = false;
   String _error = '';
 
   @override
   void initState() {
     super.initState();
+    _indukKey = sekitaTaxonomy.first.key;
+    _subChoice = sekitaTaxonomy.first.subs.isNotEmpty ? sekitaTaxonomy.first.subs.first : 'Lainnya';
     final u = Api.currentUser;
     if (_upgrade && u != null) {
       _nama.text = u.nama;
@@ -1302,6 +1303,12 @@ class _JadiMitraScreenState extends State<JadiMitraScreen> {
     _deskripsi.dispose();
     _pass.dispose();
     super.dispose();
+  }
+
+  String get _kategoriValue {
+    final ind = indukByKey(_indukKey);
+    if (ind == null) return _subChoice;
+    return _subChoice == 'Lainnya' ? ind.name : _subChoice;
   }
 
   Future<void> _submit() async {
@@ -1332,7 +1339,7 @@ class _JadiMitraScreenState extends State<JadiMitraScreen> {
     final d = await Api.daftarMitra(
       namaUsaha: namaUsaha,
       nama: _nama.text.trim(),
-      kategori: _kategori,
+      kategori: _kategoriValue,
       lokasi: _lokasi.text.trim(),
       deskripsi: _deskripsi.text.trim(),
       wa: wa,
@@ -1380,10 +1387,27 @@ class _JadiMitraScreenState extends State<JadiMitraScreen> {
           _field(_nama, 'Nama kamu', Icons.person_outline),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: _kategori,
+            value: _indukKey,
             decoration: sekitaInput('Kategori', Icons.category_outlined),
-            items: Api.kategoriDasar.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-            onChanged: (v) => setState(() => _kategori = v ?? _kategori),
+            items: sekitaTaxonomy
+                .map((ind) => DropdownMenuItem<String>(value: ind.key, child: Text(ind.name)))
+                .toList(),
+            onChanged: (v) => setState(() {
+              _indukKey = v ?? _indukKey;
+              final ind = indukByKey(_indukKey);
+              _subChoice = (ind != null && ind.subs.isNotEmpty) ? ind.subs.first : 'Lainnya';
+            }),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: _subChoice,
+            isExpanded: true,
+            decoration: sekitaInput('Layanan', Icons.list_alt_outlined),
+            items: <DropdownMenuItem<String>>[
+              ...?indukByKey(_indukKey)?.subs.map((s) => DropdownMenuItem<String>(value: s, child: Text(s, overflow: TextOverflow.ellipsis))),
+              const DropdownMenuItem<String>(value: 'Lainnya', child: Text('Lainnya (umum)')),
+            ],
+            onChanged: (v) => setState(() => _subChoice = v ?? _subChoice),
           ),
           const SizedBox(height: 12),
           _field(_lokasi, 'Lokasi (kota/kecamatan)', Icons.place_outlined),

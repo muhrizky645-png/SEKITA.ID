@@ -38,17 +38,13 @@ class _SearchScreenState extends State<SearchScreen> {
 
   // Samakan dgn web: semua kategori diawali "Lainnya" digabung jadi satu.
   String _catKey(String c) {
-    final t = c.trim();
-    return RegExp(r'^lainnya', caseSensitive: false).hasMatch(t) ? 'Lainnya' : t;
+    final n = indukNameOf(c);
+    return n.isNotEmpty ? n : c.trim();
   }
 
   bool _catMatch(Mitra m) {
     if (_category == null) return true;
-    final key = _catKey(m.kategori);
-    final sel = _category!.toLowerCase();
-    return key == _category ||
-        key.toLowerCase().startsWith(sel) ||
-        m.kategori.toLowerCase().startsWith(sel);
+    return _catKey(m.kategori) == _category;
   }
 
   List<Mitra> _apply(List<Mitra> all) {

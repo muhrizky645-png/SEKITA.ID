@@ -275,8 +275,8 @@ class _EditTokoPageState extends State<EditTokoPage> {
   final _nama = TextEditingController();
   final _lokasi = TextEditingController();
   final _desk = TextEditingController();
-  late List<String> _katItems;
-  String _kategori = Api.kategoriDasar.first;
+  late String _indukKey;
+  late String _subChoice;
   String _avatar = '';
   String _cover = '';
   List<String> _porto = [];
@@ -292,10 +292,18 @@ class _EditTokoPageState extends State<EditTokoPage> {
     _nama.text = m?.namaUsaha ?? '';
     _lokasi.text = m?.lokasi ?? '';
     _desk.text = m?.deskripsi ?? '';
-    _katItems = [...Api.kategoriDasar];
-    final k = m?.kategori ?? '';
-    if (k.isNotEmpty && !_katItems.contains(k)) _katItems.insert(0, k);
-    _kategori = k.isNotEmpty ? k : _katItems.first;
+    final k = (m?.kategori ?? '').trim();
+    final canon = canonicalCat(k);
+    final ik = indukKeyOf(k);
+    _indukKey = ik.isNotEmpty ? ik : sekitaTaxonomy.first.key;
+    final ind0 = indukByKey(_indukKey) ?? sekitaTaxonomy.first;
+    if (k.isEmpty) {
+      _subChoice = ind0.subs.isNotEmpty ? ind0.subs.first : 'Lainnya';
+    } else if (isSpecificSub(canon)) {
+      _subChoice = canon;
+    } else {
+      _subChoice = 'Lainnya';
+    }
     _cover = widget.cover;
     _porto = List<String>.from(widget.porto);
   }
@@ -379,6 +387,12 @@ class _EditTokoPageState extends State<EditTokoPage> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m), backgroundColor: error ? const Color(0xFFDC2626) : null));
   }
 
+  String get _kategoriValue {
+    final ind = indukByKey(_indukKey);
+    if (ind == null) return _subChoice;
+    return _subChoice == 'Lainnya' ? ind.name : _subChoice;
+  }
+
   Future<void> _save() async {
     if (_saving) return;
     if (_nama.text.trim().isEmpty) {
@@ -388,7 +402,7 @@ class _EditTokoPageState extends State<EditTokoPage> {
     setState(() => _saving = true);
     final p = await MitraApi.simpanProfil(
       namaUsaha: _nama.text.trim(),
-      kategori: _kategori,
+      kategori: _kategoriValue,
       lokasi: _lokasi.text.trim(),
       deskripsi: _desk.text.trim(),
     );
@@ -475,11 +489,29 @@ class _EditTokoPageState extends State<EditTokoPage> {
                 const SizedBox(height: 14),
                 _label('Kategori'),
                 DropdownButtonFormField<String>(
-                  value: _kategori,
+                  value: _indukKey,
                   isExpanded: true,
                   decoration: _dec(null),
-                  items: _katItems.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                  onChanged: (v) => setState(() => _kategori = v ?? _kategori),
+                  items: sekitaTaxonomy
+                      .map((ind) => DropdownMenuItem<String>(value: ind.key, child: Text(ind.name)))
+                      .toList(),
+                  onChanged: (v) => setState(() {
+                    _indukKey = v ?? _indukKey;
+                    final ind = indukByKey(_indukKey);
+                    _subChoice = (ind != null && ind.subs.isNotEmpty) ? ind.subs.first : 'Lainnya';
+                  }),
+                ),
+                const SizedBox(height: 14),
+                _label('Layanan'),
+                DropdownButtonFormField<String>(
+                  value: _subChoice,
+                  isExpanded: true,
+                  decoration: _dec(null),
+                  items: <DropdownMenuItem<String>>[
+                    ...?indukByKey(_indukKey)?.subs.map((s) => DropdownMenuItem<String>(value: s, child: Text(s, overflow: TextOverflow.ellipsis))),
+                    const DropdownMenuItem<String>(value: 'Lainnya', child: Text('Lainnya (umum)')),
+                  ],
+                  onChanged: (v) => setState(() => _subChoice = v ?? _subChoice),
                 ),
                 const SizedBox(height: 14),
                 _label('Lokasi'),

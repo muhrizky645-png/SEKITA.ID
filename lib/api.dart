@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models.dart';
+import 'core.dart';
 
 /// Klien HTTP sadar-sesi: menyimpan & mengirim ulang cookie login (PHPSESSID)
 /// karena app native tidak menyimpan cookie secara otomatis seperti browser.
@@ -247,6 +248,35 @@ class Api {
       }
     } catch (_) {}
     return [];
+  }
+
+  /// Ambil taksonomi kategori (induk + sub) dari web (kategori-tree.php).
+  /// Sukses -> perbarui sekitaTaxonomy global. Aman gagal (fallback lokal).
+  static Future<void> fetchTaxonomy() async {
+    try {
+      final r = await http
+          .get(Uri.parse('$base/kategori-tree.php'))
+          .timeout(const Duration(seconds: 15));
+      final j = jsonDecode(r.body);
+      if (j is Map && j['ok'] == true && j['tree'] is List) {
+        final list = <KategoriInduk>[];
+        for (final e in (j['tree'] as List)) {
+          if (e is! Map) continue;
+          final subs = <String>[];
+          if (e['subs'] is List) {
+            for (final s in (e['subs'] as List)) {
+              final str = '$s'.trim();
+              if (str.isNotEmpty) subs.add(str);
+            }
+          }
+          final key = '${e['key'] ?? ''}'.trim();
+          final name = '${e['name'] ?? ''}'.trim();
+          if (key.isEmpty || name.isEmpty) continue;
+          list.add(KategoriInduk(key, name, '${e['emoji'] ?? ''}', subs));
+        }
+        if (list.isNotEmpty) setSekitaTaxonomy(list);
+      }
+    } catch (_) {}
   }
 
   static Future<List<String>> fetchPortfolio(String id) async {

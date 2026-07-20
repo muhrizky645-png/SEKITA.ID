@@ -1,4 +1,5 @@
 import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'core.dart';
 
 /// Wrapper tipis untuk push notification OneSignal.
 ///
@@ -62,7 +63,8 @@ class Notif {
   /// Tandai device sebagai mitra + kategori agar menerima lead yang relevan.
   static Future<void> setMitraTags(String kategori) async {
     try {
-      final slug = _slug(kategori);
+      final canon = canonicalCat(kategori);
+      final slug = isSpecificSub(canon) ? _slug(canon) : '';
       final newCatKey = slug.isEmpty ? null : 'cat_$slug';
       if (_lastCatKey != null && _lastCatKey != newCatKey) {
         await OneSignal.User.removeTags([_lastCatKey!]);

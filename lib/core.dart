@@ -255,26 +255,175 @@ String pesanPembeliKeMitra({
       'Boleh kita diskusikan lebih lanjut? Terima kasih \u{1F64F}';
 }
 
+// == Taksonomi kategori (induk + sub) ==
+// Sumber kebenaran = web (api/kategori-taxonomy.php). App simpan salinan
+// hardcoded sebagai fallback, lalu bisa diperbarui saat runtime lewat
+// Api.fetchTaxonomy() (endpoint api/kategori-tree.php).
+class KategoriInduk {
+  final String key;
+  final String name;
+  final String emoji;
+  final List<String> subs;
+  const KategoriInduk(this.key, this.name, this.emoji, this.subs);
+}
+
+const List<KategoriInduk> kTaxonomyFallback = [
+  KategoriInduk('rumah', 'Rumah & Perbaikan', '\ud83c\udfe0', [
+    'Arsitek', 'Kontraktor', 'Tukang Bangunan', 'Servis AC', 'Listrik',
+    'Ledeng/Pipa', 'Servis Elektronik', 'Kayu/Mebel', 'Las',
+  ]),
+  KategoriInduk('kebersihan', 'Kebersihan & Perawatan Rumah', '\ud83e\uddf9', [
+    'Cleaning Service', 'Cuci Sofa/Kasur', 'Laundry', 'Sedot WC', 'Perawatan Taman',
+  ]),
+  KategoriInduk('kecantikan', 'Kecantikan & Kesehatan', '\ud83d\udc84', [
+    'MUA', 'Salon', 'Barbershop', 'Facial', 'Terapis/Pijat', 'Nail Art',
+  ]),
+  KategoriInduk('acara', 'Acara & Dokumentasi', '\ud83d\udcf8', [
+    'Fotografer', 'Wedding Organizer', 'Dekorasi', 'Sound System', 'MC', 'Katering',
+  ]),
+  KategoriInduk('pendidikan', 'Pendidikan & Les', '\ud83d\udcda', [
+    'Les Akademik', 'Bimbel', 'Les Musik', 'Les Bahasa', 'Mengaji', 'Les Olahraga',
+  ]),
+  KategoriInduk('transportasi', 'Transportasi & Logistik', '\ud83d\ude97', [
+    'Sewa Mobil', 'Sewa Motor', 'Rental + Sopir', 'Jasa Pindahan', 'Ekspedisi', 'Sewa Bus/Elf',
+  ]),
+  KategoriInduk('otomotif', 'Otomotif', '\ud83d\udd27', [
+    'Bengkel Mobil', 'Bengkel Motor', 'Steam/Cuci', 'Derek', 'Variasi', 'Oli/Ban',
+  ]),
+  KategoriInduk('digital', 'Digital & Kreatif', '\ud83d\udcbb', [
+    'Desain Grafis', 'Pembuatan Website', 'Admin Sosmed', 'Percetakan/Sablon', 'Servis HP/Komputer',
+  ]),
+  KategoriInduk('harian', 'Jasa Harian & Lainnya', '\ud83e\uddfa', [
+    'ART', 'Baby Sitter', 'Jahit/Permak', 'Jasa Titip',
+  ]),
+];
+
+List<KategoriInduk> sekitaTaxonomy = List<KategoriInduk>.from(kTaxonomyFallback);
+
+void setSekitaTaxonomy(List<KategoriInduk> list) {
+  if (list.isEmpty) return;
+  sekitaTaxonomy = list;
+}
+
+class _CatAliasEntry {
+  final String induk;
+  final String? sub;
+  const _CatAliasEntry(this.induk, this.sub);
+}
+
+const Map<String, _CatAliasEntry> _kCatAlias = {
+  'tukang': _CatAliasEntry('rumah', 'Tukang Bangunan'),
+  'tukang / bangunan': _CatAliasEntry('rumah', 'Tukang Bangunan'),
+  'terapis': _CatAliasEntry('kecantikan', 'Terapis/Pijat'),
+  'les privat': _CatAliasEntry('pendidikan', null),
+  'kebersihan': _CatAliasEntry('kebersihan', null),
+  'transportasi': _CatAliasEntry('transportasi', null),
+};
+
+String _lc(String s) => s.toLowerCase().trim();
+
+/// Slugify SAMA dengan server (sekita_slug_tag) & notif._slug.
+String slugTag(String s) {
+  final lower = s.toLowerCase().trim();
+  final replaced = lower.replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+  return replaced.replaceAll(RegExp(r'^_+|_+$'), '');
+}
+
+bool isLainnyaCat(String cat) =>
+    RegExp(r'^lainnya', caseSensitive: false).hasMatch(cat.trim());
+
+String indukKeyOf(String cat) {
+  final lc = _lc(cat);
+  if (lc.isEmpty) return '';
+  if (lc.startsWith('lainnya')) return 'harian';
+  for (final ind in sekitaTaxonomy) {
+    if (_lc(ind.name) == lc) return ind.key;
+    for (final s in ind.subs) {
+      if (_lc(s) == lc) return ind.key;
+    }
+  }
+  final a = _kCatAlias[lc];
+  if (a != null) return a.induk;
+  return '';
+}
+
+KategoriInduk? indukByKey(String key) {
+  for (final ind in sekitaTaxonomy) {
+    if (ind.key == key) return ind;
+  }
+  return null;
+}
+
+KategoriInduk? indukOf(String cat) => indukByKey(indukKeyOf(cat));
+
+String indukNameOf(String cat) => indukOf(cat)?.name ?? '';
+
+bool isSpecificSub(String cat) {
+  final lc = _lc(cat);
+  if (lc.isEmpty) return false;
+  for (final ind in sekitaTaxonomy) {
+    for (final s in ind.subs) {
+      if (_lc(s) == lc) return true;
+    }
+  }
+  return false;
+}
+
+String canonicalCat(String cat) {
+  final lc = _lc(cat);
+  if (lc.isEmpty) return cat;
+  for (final ind in sekitaTaxonomy) {
+    for (final s in ind.subs) {
+      if (_lc(s) == lc) return s;
+    }
+  }
+  final a = _kCatAlias[lc];
+  if (a != null && a.sub != null) return a.sub!;
+  return cat;
+}
+
+bool sameInduk(String a, String b) {
+  final ka = indukKeyOf(a);
+  final kb = indukKeyOf(b);
+  if (ka.isNotEmpty && kb.isNotEmpty) return ka == kb;
+  String base(String c) => c.split('(').first.trim().toLowerCase();
+  return base(a) == base(b);
+}
+
 IconData iconForKategori(String c) {
+  switch (indukKeyOf(c)) {
+    case 'rumah':
+      return Icons.handyman_outlined;
+    case 'kebersihan':
+      return Icons.cleaning_services_outlined;
+    case 'kecantikan':
+      return Icons.spa_outlined;
+    case 'acara':
+      return Icons.camera_alt_outlined;
+    case 'pendidikan':
+      return Icons.school_outlined;
+    case 'transportasi':
+      return Icons.local_shipping_outlined;
+    case 'otomotif':
+      return Icons.build_outlined;
+    case 'digital':
+      return Icons.devices_outlined;
+    case 'harian':
+      return Icons.home_repair_service_outlined;
+  }
   switch (c.toLowerCase()) {
     case 'terapis':
       return Icons.spa_outlined;
     case 'tukang':
       return Icons.handyman_outlined;
-    case 'transportasi':
-      return Icons.local_shipping_outlined;
     case 'servis ac':
       return Icons.ac_unit;
-    case 'kebersihan':
-      return Icons.cleaning_services_outlined;
     case 'les privat':
       return Icons.school_outlined;
     case 'fotografer':
       return Icons.camera_alt_outlined;
     case 'mua':
       return Icons.brush_outlined;
-    case 'lainnya':
-      return Icons.more_horiz;
     default:
       return Icons.work_outline;
   }
@@ -283,14 +432,25 @@ IconData iconForKategori(String c) {
 // Path relatif ke aset kategori di sekita.id. Cocokkan dgn prefix supaya
 // kategori seperti "Lainnya (Maklon ...)" tetap dapat icon yang benar.
 String catIconPath(String c) {
+  const byKey = {
+    'rumah': 'assets/img/cat/tukang.png',
+    'kebersihan': 'assets/img/cat/kebersihan.png',
+    'kecantikan': 'assets/img/cat/mua.png',
+    'acara': 'assets/img/cat/foto.png',
+    'pendidikan': 'assets/img/cat/les.png',
+    'transportasi': 'assets/img/cat/transportasi.png',
+    'otomotif': 'assets/img/cat/otomotif.png',
+    'digital': 'assets/img/cat/digital.png',
+    'harian': 'assets/img/cat/lainnya.png',
+  };
+  final byInduk = byKey[indukKeyOf(c)];
+  if (byInduk != null) return byInduk;
   final lc = c.toLowerCase().trim();
   if (lc.startsWith('terapis')) return 'assets/img/cat/terapis.png';
   if (lc.startsWith('tukang')) return 'assets/img/cat/tukang.png';
-  if (lc.startsWith('transportasi')) return 'assets/img/cat/transportasi.png';
   if (lc.startsWith('servis ac') || lc == 'ac') return 'assets/img/cat/ac.png';
-  if (lc.startsWith('kebersihan')) return 'assets/img/cat/kebersihan.png';
   if (lc.startsWith('les')) return 'assets/img/cat/les.png';
-  if (lc.startsWith('fotografer') || lc.startsWith('foto')) return 'assets/img/cat/foto.png';
+  if (lc.startsWith('foto')) return 'assets/img/cat/foto.png';
   if (lc.startsWith('mua')) return 'assets/img/cat/mua.png';
   return 'assets/img/cat/lainnya.png';
 }

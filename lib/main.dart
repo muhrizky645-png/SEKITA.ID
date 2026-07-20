@@ -39,6 +39,7 @@ void main() {
     } catch (e, s) {
       debugPrint('initDeviceId gagal: $e\n$s');
     }
+    unawaited(Api.fetchTaxonomy());
     try {
       await Notif.init();
     } catch (e, s) {

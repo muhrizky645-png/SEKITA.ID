@@ -9,7 +9,7 @@ import 'models.dart';
 import 'mitra.dart';
 import 'lupa_password.dart';
 
-const String _adminWa = '089607620368';
+const String _adminWa = '083176265153';
 const Color _line = Color(0xFFE8ECF3);
 const Color _muted = Color(0xFF64748B);
 const Color _danger = Color(0xFFDC2626);
@@ -1176,7 +1176,7 @@ const List<_SkSection> _skData = [
     'Syarat & Ketentuan ini tunduk pada hukum Republik Indonesia.',
   ]),
   _SkSection('Hubungi Kami', [
-    'Ada pertanyaan soal ketentuan ini? Hubungi admin Sekita via WhatsApp: 089607620368.',
+    'Ada pertanyaan soal ketentuan ini? Hubungi admin Sekita via WhatsApp: 083176265153.',
   ]),
 ];
 

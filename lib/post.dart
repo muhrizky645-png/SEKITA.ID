@@ -81,13 +81,15 @@ class _PostKebutuhanScreenState extends State<PostKebutuhanScreen> {
   final _wa = TextEditingController();
 
   String? _selectedCat;
+  String? _selectedInduk;
+  String? _selectedSub;
   String? _lokasi;
   String? _waktu;
   bool _budgetNego = false;
   bool _waLocked = false;
   bool _sending = false;
 
-  bool _eCat = false, _eCatOther = false, _eTitle = false, _eLokasi = false, _eWaktu = false, _eWa = false;
+  bool _eCat = false, _eSub = false, _eCatOther = false, _eTitle = false, _eLokasi = false, _eWaktu = false, _eWa = false;
 
   @override
   void initState() {
@@ -198,28 +200,33 @@ class _PostKebutuhanScreenState extends State<PostKebutuhanScreen> {
     }
     final waDigits = _wa.text.replaceAll(RegExp(r'[^0-9]'), '');
     setState(() {
-      _eCat = _selectedCat == null;
-      _eCatOther = _selectedCat == 'Lainnya' && _catOther.text.trim().isEmpty;
+      _eCat = _selectedInduk == null;
+      _eSub = _selectedInduk != null && _selectedSub == null;
+      _eCatOther = _selectedSub == 'Lainnya' && _catOther.text.trim().isEmpty;
       _eTitle = _title.text.trim().isEmpty;
       _eLokasi = _lokasi == null;
       _eWaktu = _waktu == null;
       _eWa = waDigits.length < 9;
     });
-    if (_eCat || _eCatOther || _eTitle || _eLokasi || _eWaktu || _eWa) return;
+    if (_eCat || _eSub || _eCatOther || _eTitle || _eLokasi || _eWaktu || _eWa) return;
 
     setState(() => _sending = true);
-    final opt = _cats.firstWhere((c) => c.name == _selectedCat,
-        orElse: () => const _CatOpt('Lainnya', '\u{1F9F0}', '#f1f5f9'));
+    final ind = indukByKey(_selectedInduk ?? '');
+    final emoji = ind?.emoji ?? '';
+    final extra = _selectedSub == 'Lainnya' ? _catOther.text.trim() : '';
+    final desk = _deskripsi.text.trim();
+    final fullDesk = extra.isEmpty ? desk : (desk.isEmpty ? 'Kebutuhan: ' + extra : desk + '  |  Kebutuhan: ' + extra);
+    final catVal = (ind == null) ? '' : ((_selectedSub == 'Lainnya' || _selectedSub == null) ? ind.name : _selectedSub!);
     final ok = await Api.postKebutuhan(
       title: _title.text.trim(),
-      kategori: _catLabel(),
+      kategori: catVal,
       lokasi: _lokasi ?? '',
-      deskripsi: _deskripsi.text.trim(),
+      deskripsi: fullDesk,
       budget: _budgetText(),
       wa: _wa.text.trim(),
       waktu: _waktu ?? '',
-      ic: opt.emoji,
-      bg: opt.bgHex,
+      ic: emoji,
+      bg: '#eff6ff',
     );
     if (!mounted) return;
     setState(() => _sending = false);
@@ -240,10 +247,12 @@ class _PostKebutuhanScreenState extends State<PostKebutuhanScreen> {
       _budgetMin.clear();
       _budgetMax.clear();
       _selectedCat = null;
+      _selectedInduk = null;
+      _selectedSub = null;
       _lokasi = null;
       _waktu = null;
       _budgetNego = false;
-      _eCat = _eCatOther = _eTitle = _eLokasi = _eWaktu = _eWa = false;
+      _eCat = _eSub = _eCatOther = _eTitle = _eLokasi = _eWaktu = _eWa = false;
       if (!_waLocked) _wa.clear();
     });
   }
@@ -341,13 +350,20 @@ class _PostKebutuhanScreenState extends State<PostKebutuhanScreen> {
             const SizedBox(height: 20),
             _label('Kategori', required: true),
             const SizedBox(height: 8),
-            Wrap(spacing: 9, runSpacing: 9, children: _cats.map(_catPill).toList()),
+            Wrap(spacing: 9, runSpacing: 9, children: sekitaTaxonomy.map(_indukPill).toList()),
             if (_eCat) _errText('Pilih kategori dulu ya.'),
-            if (_selectedCat == 'Lainnya') ...[
+            if (_selectedInduk != null) ...[
+              const SizedBox(height: 16),
+              _label('Layanan yang dibutuhkan', required: true),
+              const SizedBox(height: 8),
+              Wrap(spacing: 9, runSpacing: 9, children: _subPills()),
+              if (_eSub) _errText('Pilih layanan dulu ya.'),
+            ],
+            if (_selectedSub == 'Lainnya') ...[
               const SizedBox(height: 16),
               _label('Sebutkan kebutuhanmu', required: true),
               const SizedBox(height: 7),
-              _input(_catOther, hint: 'Contoh: Sewa sound system, jasa angkut pindahan\u2026', maxLength: 40),
+              _input(_catOther, hint: 'Contoh: sesuatu yang belum ada di daftar', maxLength: 40),
               if (_eCatOther) _errText('Tulis dulu kebutuhan spesifikmu ya.'),
             ],
             const SizedBox(height: 16),
@@ -438,6 +454,68 @@ class _PostKebutuhanScreenState extends State<PostKebutuhanScreen> {
         ),
       ),
     );
+  }
+
+  Widget _indukPill(KategoriInduk ind) {
+    final active = _selectedInduk == ind.key;
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: () => setState(() {
+        _selectedInduk = ind.key;
+        _selectedSub = null;
+        _eCat = false;
+        _eSub = false;
+      }),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: active ? const Color(0xFFEFF6FF) : Colors.white,
+          border: Border.all(color: active ? kBrand : _kLine),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SekitaImage(catIconPath(ind.name), width: 18, height: 18, fit: BoxFit.contain),
+            const SizedBox(width: 7),
+            Text(ind.name,
+                style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: active ? kBrand : const Color(0xFF334155))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _subPills() {
+    final ind = indukByKey(_selectedInduk ?? '');
+    if (ind == null) return const [];
+    final subs = <String>[...ind.subs, 'Lainnya'];
+    return subs.map((s) {
+      final active = _selectedSub == s;
+      return InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: () => setState(() {
+          _selectedSub = s;
+          _eSub = false;
+        }),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+          decoration: BoxDecoration(
+            color: active ? const Color(0xFFEFF6FF) : Colors.white,
+            border: Border.all(color: active ? kBrand : _kLine),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(s,
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: active ? kBrand : const Color(0xFF334155))),
+        ),
+      );
+    }).toList();
   }
 
   Widget _catPill(_CatOpt c) {

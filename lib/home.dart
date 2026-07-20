@@ -335,10 +335,11 @@ class _HomeScreenState extends State<HomeScreen> {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: Api.kategoriDasar.length,
+        itemCount: sekitaTaxonomy.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (_, i) {
-          final c = Api.kategoriDasar[i];
+          final ind = sekitaTaxonomy[i];
+          final c = ind.name;
           return GestureDetector(
             onTap: () => _openCategory(c),
             child: Column(
