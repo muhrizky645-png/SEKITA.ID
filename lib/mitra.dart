@@ -1272,7 +1272,7 @@ class _JadiMitraScreenState extends State<JadiMitraScreen> {
   final _nama = TextEditingController();
   final _wa = TextEditingController();
   final _email = TextEditingController();
-  final _lokasi = TextEditingController();
+  String _lokasiVal = '';
   final _deskripsi = TextEditingController();
   final _pass = TextEditingController();
   late String _indukKey;
@@ -1299,7 +1299,6 @@ class _JadiMitraScreenState extends State<JadiMitraScreen> {
     _nama.dispose();
     _wa.dispose();
     _email.dispose();
-    _lokasi.dispose();
     _deskripsi.dispose();
     _pass.dispose();
     super.dispose();
@@ -1340,7 +1339,7 @@ class _JadiMitraScreenState extends State<JadiMitraScreen> {
       namaUsaha: namaUsaha,
       nama: _nama.text.trim(),
       kategori: _kategoriValue,
-      lokasi: _lokasi.text.trim(),
+      lokasi: _lokasiVal.trim(),
       deskripsi: _deskripsi.text.trim(),
       wa: wa,
       email: _email.text.trim(),
@@ -1410,7 +1409,12 @@ class _JadiMitraScreenState extends State<JadiMitraScreen> {
             onChanged: (v) => setState(() => _subChoice = v ?? _subChoice),
           ),
           const SizedBox(height: 12),
-          _field(_lokasi, 'Lokasi (kota/kecamatan)', Icons.place_outlined),
+          WilayahField(
+            initial: _lokasiVal,
+            onChanged: (v) => _lokasiVal = v,
+            decoration: (label, hint) =>
+                sekitaInput(label, Icons.place_outlined, hint: hint),
+          ),
           const SizedBox(height: 12),
           _field(_wa, 'Nomor WhatsApp', Icons.call_outlined, keyboard: TextInputType.phone, enabled: !_upgrade),
           if (_upgrade) ...[

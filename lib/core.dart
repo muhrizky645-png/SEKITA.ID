@@ -560,3 +560,170 @@ class SekitaImage extends StatelessWidget {
         child: const Icon(Icons.image_outlined, color: Colors.white),
       );
 }
+
+
+// =================== WILAYAH (Provinsi -> Kabupaten/Kota) ===================
+// Dataset + picker cascading (pilih provinsi -> pilih kabupaten/kota).
+// Nilai disimpan gabungan "Kabupaten, Provinsi" (mis. "Sleman, DI Yogyakarta"),
+// selaras dengan web (assets/js/wilayah.js).
+
+const Map<String, List<String>> kWilayah = {
+  'Aceh': ['Aceh Barat', 'Aceh Barat Daya', 'Aceh Besar', 'Aceh Jaya', 'Aceh Selatan', 'Aceh Singkil', 'Aceh Tamiang', 'Aceh Tengah', 'Aceh Tenggara', 'Aceh Timur', 'Aceh Utara', 'Bener Meriah', 'Bireuen', 'Gayo Lues', 'Nagan Raya', 'Pidie', 'Pidie Jaya', 'Simeulue', 'Kota Banda Aceh', 'Kota Langsa', 'Kota Lhokseumawe', 'Kota Sabang', 'Kota Subulussalam'],
+  'Sumatera Utara': ['Asahan', 'Batu Bara', 'Dairi', 'Deli Serdang', 'Humbang Hasundutan', 'Karo', 'Labuhanbatu', 'Labuhanbatu Selatan', 'Labuhanbatu Utara', 'Langkat', 'Mandailing Natal', 'Nias', 'Nias Barat', 'Nias Selatan', 'Nias Utara', 'Padang Lawas', 'Padang Lawas Utara', 'Pakpak Bharat', 'Samosir', 'Serdang Bedagai', 'Simalungun', 'Tapanuli Selatan', 'Tapanuli Tengah', 'Tapanuli Utara', 'Toba', 'Kota Binjai', 'Kota Gunungsitoli', 'Kota Medan', 'Kota Padangsidimpuan', 'Kota Pematangsiantar', 'Kota Sibolga', 'Kota Tanjungbalai', 'Kota Tebing Tinggi'],
+  'Sumatera Barat': ['Agam', 'Dharmasraya', 'Kepulauan Mentawai', 'Lima Puluh Kota', 'Padang Pariaman', 'Pasaman', 'Pasaman Barat', 'Pesisir Selatan', 'Sijunjung', 'Solok', 'Solok Selatan', 'Tanah Datar', 'Kota Bukittinggi', 'Kota Padang', 'Kota Padang Panjang', 'Kota Pariaman', 'Kota Payakumbuh', 'Kota Sawahlunto', 'Kota Solok'],
+  'Riau': ['Bengkalis', 'Indragiri Hilir', 'Indragiri Hulu', 'Kampar', 'Kepulauan Meranti', 'Kuantan Singingi', 'Pelalawan', 'Rokan Hilir', 'Rokan Hulu', 'Siak', 'Kota Dumai', 'Kota Pekanbaru'],
+  'Jambi': ['Batanghari', 'Bungo', 'Kerinci', 'Merangin', 'Muaro Jambi', 'Sarolangun', 'Tanjung Jabung Barat', 'Tanjung Jabung Timur', 'Tebo', 'Kota Jambi', 'Kota Sungai Penuh'],
+  'Sumatera Selatan': ['Banyuasin', 'Empat Lawang', 'Lahat', 'Muara Enim', 'Musi Banyuasin', 'Musi Rawas', 'Musi Rawas Utara', 'Ogan Ilir', 'Ogan Komering Ilir', 'Ogan Komering Ulu', 'Ogan Komering Ulu Selatan', 'Ogan Komering Ulu Timur', 'Penukal Abab Lematang Ilir', 'Kota Lubuklinggau', 'Kota Pagar Alam', 'Kota Palembang', 'Kota Prabumulih'],
+  'Bengkulu': ['Bengkulu Selatan', 'Bengkulu Tengah', 'Bengkulu Utara', 'Kaur', 'Kepahiang', 'Lebong', 'Mukomuko', 'Rejang Lebong', 'Seluma', 'Kota Bengkulu'],
+  'Lampung': ['Lampung Barat', 'Lampung Selatan', 'Lampung Tengah', 'Lampung Timur', 'Lampung Utara', 'Mesuji', 'Pesawaran', 'Pesisir Barat', 'Pringsewu', 'Tanggamus', 'Tulang Bawang', 'Tulang Bawang Barat', 'Way Kanan', 'Kota Bandar Lampung', 'Kota Metro'],
+  'Kepulauan Bangka Belitung': ['Bangka', 'Bangka Barat', 'Bangka Selatan', 'Bangka Tengah', 'Belitung', 'Belitung Timur', 'Kota Pangkalpinang'],
+  'Kepulauan Riau': ['Bintan', 'Karimun', 'Kepulauan Anambas', 'Lingga', 'Natuna', 'Kota Batam', 'Kota Tanjungpinang'],
+  'DKI Jakarta': ['Kepulauan Seribu', 'Kota Jakarta Barat', 'Kota Jakarta Pusat', 'Kota Jakarta Selatan', 'Kota Jakarta Timur', 'Kota Jakarta Utara'],
+  'Jawa Barat': ['Bandung', 'Bandung Barat', 'Bekasi', 'Bogor', 'Ciamis', 'Cianjur', 'Cirebon', 'Garut', 'Indramayu', 'Karawang', 'Kuningan', 'Majalengka', 'Pangandaran', 'Purwakarta', 'Subang', 'Sukabumi', 'Sumedang', 'Tasikmalaya', 'Kota Bandung', 'Kota Banjar', 'Kota Bekasi', 'Kota Bogor', 'Kota Cimahi', 'Kota Cirebon', 'Kota Depok', 'Kota Sukabumi', 'Kota Tasikmalaya'],
+  'Jawa Tengah': ['Banjarnegara', 'Banyumas', 'Batang', 'Blora', 'Boyolali', 'Brebes', 'Cilacap', 'Demak', 'Grobogan', 'Jepara', 'Karanganyar', 'Kebumen', 'Kendal', 'Klaten', 'Kudus', 'Magelang', 'Pati', 'Pekalongan', 'Pemalang', 'Purbalingga', 'Purworejo', 'Rembang', 'Semarang', 'Sragen', 'Sukoharjo', 'Tegal', 'Temanggung', 'Wonogiri', 'Wonosobo', 'Kota Magelang', 'Kota Pekalongan', 'Kota Salatiga', 'Kota Semarang', 'Kota Surakarta', 'Kota Tegal'],
+  'DI Yogyakarta': ['Bantul', 'Gunungkidul', 'Kulon Progo', 'Sleman', 'Kota Yogyakarta'],
+  'Jawa Timur': ['Bangkalan', 'Banyuwangi', 'Blitar', 'Bojonegoro', 'Bondowoso', 'Gresik', 'Jember', 'Jombang', 'Kediri', 'Lamongan', 'Lumajang', 'Madiun', 'Magetan', 'Malang', 'Mojokerto', 'Nganjuk', 'Ngawi', 'Pacitan', 'Pamekasan', 'Pasuruan', 'Ponorogo', 'Probolinggo', 'Sampang', 'Sidoarjo', 'Situbondo', 'Sumenep', 'Trenggalek', 'Tuban', 'Tulungagung', 'Kota Batu', 'Kota Blitar', 'Kota Kediri', 'Kota Madiun', 'Kota Malang', 'Kota Mojokerto', 'Kota Pasuruan', 'Kota Probolinggo', 'Kota Surabaya'],
+  'Banten': ['Lebak', 'Pandeglang', 'Serang', 'Tangerang', 'Kota Cilegon', 'Kota Serang', 'Kota Tangerang', 'Kota Tangerang Selatan'],
+  'Bali': ['Badung', 'Bangli', 'Buleleng', 'Gianyar', 'Jembrana', 'Karangasem', 'Klungkung', 'Tabanan', 'Kota Denpasar'],
+  'Nusa Tenggara Barat': ['Bima', 'Dompu', 'Lombok Barat', 'Lombok Tengah', 'Lombok Timur', 'Lombok Utara', 'Sumbawa', 'Sumbawa Barat', 'Kota Bima', 'Kota Mataram'],
+  'Nusa Tenggara Timur': ['Alor', 'Belu', 'Ende', 'Flores Timur', 'Kupang', 'Lembata', 'Malaka', 'Manggarai', 'Manggarai Barat', 'Manggarai Timur', 'Nagekeo', 'Ngada', 'Rote Ndao', 'Sabu Raijua', 'Sikka', 'Sumba Barat', 'Sumba Barat Daya', 'Sumba Tengah', 'Sumba Timur', 'Timor Tengah Selatan', 'Timor Tengah Utara', 'Kota Kupang'],
+  'Kalimantan Barat': ['Bengkayang', 'Kapuas Hulu', 'Kayong Utara', 'Ketapang', 'Kubu Raya', 'Landak', 'Melawi', 'Mempawah', 'Sambas', 'Sanggau', 'Sekadau', 'Sintang', 'Kota Pontianak', 'Kota Singkawang'],
+  'Kalimantan Tengah': ['Barito Selatan', 'Barito Timur', 'Barito Utara', 'Gunung Mas', 'Kapuas', 'Katingan', 'Kotawaringin Barat', 'Kotawaringin Timur', 'Lamandau', 'Murung Raya', 'Pulang Pisau', 'Seruyan', 'Sukamara', 'Kota Palangka Raya'],
+  'Kalimantan Selatan': ['Balangan', 'Banjar', 'Barito Kuala', 'Hulu Sungai Selatan', 'Hulu Sungai Tengah', 'Hulu Sungai Utara', 'Kotabaru', 'Tabalong', 'Tanah Bumbu', 'Tanah Laut', 'Tapin', 'Kota Banjarbaru', 'Kota Banjarmasin'],
+  'Kalimantan Timur': ['Berau', 'Kutai Barat', 'Kutai Kartanegara', 'Kutai Timur', 'Mahakam Ulu', 'Paser', 'Penajam Paser Utara', 'Kota Balikpapan', 'Kota Bontang', 'Kota Samarinda'],
+  'Kalimantan Utara': ['Bulungan', 'Malinau', 'Nunukan', 'Tana Tidung', 'Kota Tarakan'],
+  'Sulawesi Utara': ['Bolaang Mongondow', 'Bolaang Mongondow Selatan', 'Bolaang Mongondow Timur', 'Bolaang Mongondow Utara', 'Kepulauan Sangihe', 'Kepulauan Siau Tagulandang Biaro', 'Kepulauan Talaud', 'Minahasa', 'Minahasa Selatan', 'Minahasa Tenggara', 'Minahasa Utara', 'Kota Bitung', 'Kota Kotamobagu', 'Kota Manado', 'Kota Tomohon'],
+  'Sulawesi Tengah': ['Banggai', 'Banggai Kepulauan', 'Banggai Laut', 'Buol', 'Donggala', 'Morowali', 'Morowali Utara', 'Parigi Moutong', 'Poso', 'Sigi', 'Tojo Una-Una', 'Tolitoli', 'Kota Palu'],
+  'Sulawesi Selatan': ['Bantaeng', 'Barru', 'Bone', 'Bulukumba', 'Enrekang', 'Gowa', 'Jeneponto', 'Kepulauan Selayar', 'Luwu', 'Luwu Timur', 'Luwu Utara', 'Maros', 'Pangkajene dan Kepulauan', 'Pinrang', 'Sidenreng Rappang', 'Sinjai', 'Soppeng', 'Takalar', 'Tana Toraja', 'Toraja Utara', 'Wajo', 'Kota Makassar', 'Kota Palopo', 'Kota Parepare'],
+  'Sulawesi Tenggara': ['Bombana', 'Buton', 'Buton Selatan', 'Buton Tengah', 'Buton Utara', 'Kolaka', 'Kolaka Timur', 'Kolaka Utara', 'Konawe', 'Konawe Kepulauan', 'Konawe Selatan', 'Konawe Utara', 'Muna', 'Muna Barat', 'Wakatobi', 'Kota Baubau', 'Kota Kendari'],
+  'Gorontalo': ['Boalemo', 'Bone Bolango', 'Gorontalo', 'Gorontalo Utara', 'Pohuwato', 'Kota Gorontalo'],
+  'Sulawesi Barat': ['Majene', 'Mamasa', 'Mamuju', 'Mamuju Tengah', 'Pasangkayu', 'Polewali Mandar'],
+  'Maluku': ['Buru', 'Buru Selatan', 'Kepulauan Aru', 'Kepulauan Tanimbar', 'Maluku Barat Daya', 'Maluku Tengah', 'Maluku Tenggara', 'Seram Bagian Barat', 'Seram Bagian Timur', 'Kota Ambon', 'Kota Tual'],
+  'Maluku Utara': ['Halmahera Barat', 'Halmahera Selatan', 'Halmahera Tengah', 'Halmahera Timur', 'Halmahera Utara', 'Kepulauan Sula', 'Pulau Morotai', 'Pulau Taliabu', 'Kota Ternate', 'Kota Tidore Kepulauan'],
+  'Papua': ['Biak Numfor', 'Jayapura', 'Keerom', 'Kepulauan Yapen', 'Mamberamo Raya', 'Sarmi', 'Supiori', 'Waropen', 'Kota Jayapura'],
+  'Papua Barat': ['Fakfak', 'Kaimana', 'Manokwari', 'Manokwari Selatan', 'Pegunungan Arfak', 'Teluk Bintuni', 'Teluk Wondama'],
+  'Papua Barat Daya': ['Maybrat', 'Raja Ampat', 'Sorong', 'Sorong Selatan', 'Tambrauw', 'Kota Sorong'],
+  'Papua Selatan': ['Asmat', 'Boven Digoel', 'Mappi', 'Merauke'],
+  'Papua Tengah': ['Deiyai', 'Dogiyai', 'Intan Jaya', 'Mimika', 'Nabire', 'Paniai', 'Puncak', 'Puncak Jaya'],
+  'Papua Pegunungan': ['Jayawijaya', 'Lanny Jaya', 'Mamberamo Tengah', 'Nduga', 'Pegunungan Bintang', 'Tolikara', 'Yahukimo', 'Yalimo'],
+};
+
+List<String> wilayahProvinsi() {
+  final a = kWilayah.keys.toList();
+  a.sort((x, y) => x.toLowerCase().compareTo(y.toLowerCase()));
+  return a;
+}
+
+List<String> wilayahKabupaten(String prov) {
+  final a = List<String>.from(kWilayah[prov] ?? const <String>[]);
+  a.sort((x, y) => x.toLowerCase().compareTo(y.toLowerCase()));
+  return a;
+}
+
+String wilayahCombine(String kab, String prov) {
+  final k = kab.trim();
+  final p = prov.trim();
+  if (k.isEmpty) return '';
+  return p.isEmpty ? k : '$k, $p';
+}
+
+/// Pisahkan nilai gabungan jadi (provinsi, kabupaten). Mengenali data lama.
+(String, String) wilayahParse(String? value) {
+  final val = (value ?? '').trim();
+  if (val.isEmpty) return ('', '');
+  final i = val.lastIndexOf(', ');
+  if (i > -1) {
+    final kab = val.substring(0, i).trim();
+    final prov = val.substring(i + 2).trim();
+    if (kWilayah.containsKey(prov)) return (prov, kab);
+    if (prov.toLowerCase() == 'yogyakarta' &&
+        kWilayah.containsKey('DI Yogyakarta')) {
+      return ('DI Yogyakarta', kab);
+    }
+  }
+  for (final e in kWilayah.entries) {
+    if (e.value.contains(val)) return (e.key, val);
+  }
+  return ('', val);
+}
+
+/// Picker lokasi cascading ala web: pilih provinsi dulu, lalu kabupaten/kota.
+/// Nilai yang dikirim lewat [onChanged] sudah gabungan "Kabupaten, Provinsi".
+class WilayahField extends StatefulWidget {
+  final String initial;
+  final ValueChanged<String> onChanged;
+  final InputDecoration Function(String label, String hint) decoration;
+  final double gap;
+  const WilayahField({
+    super.key,
+    this.initial = '',
+    required this.onChanged,
+    required this.decoration,
+    this.gap = 12,
+  });
+  @override
+  State<WilayahField> createState() => _WilayahFieldState();
+}
+
+class _WilayahFieldState extends State<WilayahField> {
+  String? _prov;
+  String? _kab;
+
+  @override
+  void initState() {
+    super.initState();
+    final p = wilayahParse(widget.initial);
+    _prov = p.$1.isEmpty ? null : p.$1;
+    _kab = p.$2.isEmpty ? null : p.$2;
+  }
+
+  void _emit() => widget.onChanged(wilayahCombine(_kab ?? '', _prov ?? ''));
+
+  @override
+  Widget build(BuildContext context) {
+    final base = _prov == null ? const <String>[] : wilayahKabupaten(_prov!);
+    final items = <String>[...base];
+    if (_kab != null && _kab!.isNotEmpty && !items.contains(_kab)) {
+      items.insert(0, _kab!);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DropdownButtonFormField<String>(
+          value: _prov,
+          isExpanded: true,
+          decoration: widget.decoration('Provinsi', 'Pilih provinsi'),
+          items: wilayahProvinsi()
+              .map((p) => DropdownMenuItem<String>(
+                  value: p, child: Text(p, overflow: TextOverflow.ellipsis)))
+              .toList(),
+          onChanged: (v) {
+            setState(() {
+              _prov = v;
+              _kab = null;
+            });
+            _emit();
+          },
+        ),
+        SizedBox(height: widget.gap),
+        DropdownButtonFormField<String>(
+          key: ValueKey<String>('kab_' + (_prov ?? '')),
+          value: (_kab != null && items.contains(_kab)) ? _kab : null,
+          isExpanded: true,
+          decoration: widget.decoration('Kabupaten/Kota',
+              _prov == null ? 'Pilih provinsi dulu' : 'Pilih kabupaten/kota'),
+          items: items
+              .map((k) => DropdownMenuItem<String>(
+                  value: k, child: Text(k, overflow: TextOverflow.ellipsis)))
+              .toList(),
+          onChanged: _prov == null
+              ? null
+              : (v) {
+                  setState(() => _kab = v);
+                  _emit();
+                },
+        ),
+      ],
+    );
+  }
+}

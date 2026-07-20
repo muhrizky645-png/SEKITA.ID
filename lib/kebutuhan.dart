@@ -632,7 +632,7 @@ class _EditSheet extends StatefulWidget {
 
 class _EditSheetState extends State<_EditSheet> {
   late final TextEditingController _title;
-  late final TextEditingController _lokasi;
+  String _lokasiVal = '';
   late final TextEditingController _budget;
   late final TextEditingController _wa;
   late final TextEditingController _deskripsi;
@@ -645,7 +645,7 @@ class _EditSheetState extends State<_EditSheet> {
     super.initState();
     final k = widget.k;
     _title = TextEditingController(text: k.title);
-    _lokasi = TextEditingController(text: k.loc);
+    _lokasiVal = k.loc;
     _budget = TextEditingController(text: k.budget);
     _wa = TextEditingController(text: k.wa);
     _deskripsi = TextEditingController(text: k.deskripsi);
@@ -666,7 +666,6 @@ class _EditSheetState extends State<_EditSheet> {
   @override
   void dispose() {
     _title.dispose();
-    _lokasi.dispose();
     _budget.dispose();
     _wa.dispose();
     _deskripsi.dispose();
@@ -686,7 +685,7 @@ class _EditSheetState extends State<_EditSheet> {
 
   Future<void> _save() async {
     final title = _title.text.trim();
-    final lokasi = _lokasi.text.trim();
+    final lokasi = _lokasiVal.trim();
     if (title.isEmpty || lokasi.isEmpty) {
       _snack('Judul dan lokasi wajib diisi.');
       return;
@@ -769,7 +768,11 @@ class _EditSheetState extends State<_EditSheet> {
                 ),
                 const SizedBox(height: 12),
                 _label('Lokasi'),
-                TextField(controller: _lokasi, decoration: _dec('Mis. Sleman, Yogyakarta')),
+                WilayahField(
+                  initial: _lokasiVal,
+                  onChanged: (v) => _lokasiVal = v,
+                  decoration: (label, hint) => _dec(hint),
+                ),
                 const SizedBox(height: 12),
                 _label('Perkiraan budget (opsional)'),
                 TextField(controller: _budget, decoration: _dec('Mis. Rp100.000 (nego)')),

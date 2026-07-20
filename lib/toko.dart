@@ -273,7 +273,7 @@ class EditTokoPage extends StatefulWidget {
 
 class _EditTokoPageState extends State<EditTokoPage> {
   final _nama = TextEditingController();
-  final _lokasi = TextEditingController();
+  String _lokasiVal = '';
   final _desk = TextEditingController();
   late String _indukKey;
   late String _subChoice;
@@ -290,7 +290,7 @@ class _EditTokoPageState extends State<EditTokoPage> {
     super.initState();
     final m = Api.currentMitra;
     _nama.text = m?.namaUsaha ?? '';
-    _lokasi.text = m?.lokasi ?? '';
+    _lokasiVal = m?.lokasi ?? '';
     _desk.text = m?.deskripsi ?? '';
     final k = (m?.kategori ?? '').trim();
     final canon = canonicalCat(k);
@@ -311,7 +311,6 @@ class _EditTokoPageState extends State<EditTokoPage> {
   @override
   void dispose() {
     _nama.dispose();
-    _lokasi.dispose();
     _desk.dispose();
     super.dispose();
   }
@@ -403,7 +402,7 @@ class _EditTokoPageState extends State<EditTokoPage> {
     final p = await MitraApi.simpanProfil(
       namaUsaha: _nama.text.trim(),
       kategori: _kategoriValue,
-      lokasi: _lokasi.text.trim(),
+      lokasi: _lokasiVal.trim(),
       deskripsi: _desk.text.trim(),
     );
     if (!p.ok) {
@@ -515,7 +514,11 @@ class _EditTokoPageState extends State<EditTokoPage> {
                 ),
                 const SizedBox(height: 14),
                 _label('Lokasi'),
-                TextField(controller: _lokasi, decoration: _dec('Kota / kecamatan')),
+                WilayahField(
+                  initial: _lokasiVal,
+                  onChanged: (v) => _lokasiVal = v,
+                  decoration: (label, hint) => _dec(hint),
+                ),
                 const SizedBox(height: 14),
                 _label('Tentang / deskripsi'),
                 TextField(controller: _desk, maxLines: 5, decoration: _dec('Ceritakan layanan tokomu...')),

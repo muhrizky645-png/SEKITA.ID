@@ -84,6 +84,7 @@ class _PostKebutuhanScreenState extends State<PostKebutuhanScreen> {
   String? _selectedInduk;
   String? _selectedSub;
   String? _lokasi;
+  int _wilGen = 0;
   String? _waktu;
   bool _budgetNego = false;
   bool _waLocked = false;
@@ -250,6 +251,7 @@ class _PostKebutuhanScreenState extends State<PostKebutuhanScreen> {
       _selectedInduk = null;
       _selectedSub = null;
       _lokasi = null;
+      _wilGen++;
       _waktu = null;
       _budgetNego = false;
       _eCat = _eSub = _eCatOther = _eTitle = _eLokasi = _eWaktu = _eWa = false;
@@ -375,11 +377,14 @@ class _PostKebutuhanScreenState extends State<PostKebutuhanScreen> {
             const SizedBox(height: 16),
             _label('Lokasi', required: true),
             const SizedBox(height: 7),
-            _dropdown(
-              value: _lokasi,
-              hint: 'Pilih wilayah\u2026',
-              items: _lokasiOpts,
-              onChanged: (v) => setState(() { _lokasi = v; _eLokasi = false; }),
+            WilayahField(
+              key: ValueKey('wil_' + _wilGen.toString()),
+              initial: _lokasi ?? '',
+              onChanged: (v) => setState(() {
+                _lokasi = v.isEmpty ? null : v;
+                _eLokasi = false;
+              }),
+              decoration: (label, hint) => _dec(hint: hint),
             ),
             if (_eLokasi) _errText('Pilih lokasi kamu.'),
             const SizedBox(height: 16),
