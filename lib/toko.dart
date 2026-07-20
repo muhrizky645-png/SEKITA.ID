@@ -23,6 +23,7 @@ class _TokoScreenState extends State<TokoScreen> {
   String _cover = '';
   List<String> _porto = [];
   List<Ulasan> _ulasan = [];
+  List<MitraItem> _items = [];
   bool _loading = true;
 
   @override
@@ -37,11 +38,13 @@ class _TokoScreenState extends State<TokoScreen> {
     final porto = await MitraApi.ambilPortfolio();
     final mid = '${Api.currentMitra?.id ?? 0}';
     final ulasan = mid == '0' ? <Ulasan>[] : await Api.fetchUlasan(mid);
+    final items = await MitraApi.ambilItemSaya();
     if (!mounted) return;
     setState(() {
       _cover = cover;
       _porto = porto;
       _ulasan = ulasan;
+      _items = items;
       _loading = false;
     });
   }
@@ -192,18 +195,77 @@ class _TokoScreenState extends State<TokoScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Tampilkan layanan atau produk beserta harga di profilmu.',
-              style: TextStyle(color: _muted, fontSize: 13)),
+          if (_items.isEmpty)
+            const Text(
+              'Belum ada item. Ketuk Kelola Katalog untuk menambah layanan atau produk beserta harganya.',
+              style: TextStyle(color: _muted, fontSize: 13, height: 1.4),
+            )
+          else
+            ..._items.map(_katalogRow),
           const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
             height: 44,
             child: FilledButton.tonalIcon(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const KatalogPage()),
-              ),
+              onPressed: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const KatalogPage()),
+                );
+                _load();
+              },
               icon: const Icon(Icons.sell_outlined, size: 18),
               label: const Text('Kelola Katalog'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _katalogRow(MitraItem it) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _line),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (it.foto.isNotEmpty) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox(width: 46, height: 46, child: SekitaImage(it.foto, fit: BoxFit.cover)),
+            ),
+            const SizedBox(width: 10),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(it.judul,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                    ),
+                    if (!it.isAktif)
+                      const Padding(
+                        padding: EdgeInsets.only(left: 6),
+                        child: Text('Nonaktif', style: TextStyle(color: _muted, fontSize: 11)),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  it.jenisLabel + ' · ' + it.hargaLabel + (it.satuan.isNotEmpty ? ' / ' + it.satuan : ''),
+                  style: const TextStyle(color: kBrand, fontWeight: FontWeight.w700, fontSize: 12.5),
+                ),
+              ],
             ),
           ),
         ],
